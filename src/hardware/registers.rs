@@ -1,0 +1,65 @@
+const PC_START: u16 = 0x3000;
+
+/// The LC-3 has 10 total registers,
+/// each of which is 16 bits. Most of them are general purpose,
+/// but a few have designated roles.
+/// - 8 general purpose registers (R0-R7)
+/// - 1 program counter (PC) register
+/// - 1 condition flags (COND) register
+#[derive(Debug, Copy, Clone)]
+pub enum Register {
+    R0,
+    R1,
+    R2,
+    R3,
+    R4,
+    R5,
+    R6,
+    R7,
+    PC,
+    Cond,
+    Count,
+}
+
+///condition flags which provide information about the most recently executed calculation.
+enum ConditionFlag {
+    Positive = 1 << 0,
+    Zero = 1 << 1,
+    Negative = 1 << 2,
+}
+
+pub struct Registers {
+    pub registers: [u16; Register::Count as usize],
+}
+
+impl Registers {
+    pub fn new() -> Self {
+        let mut registers = [0; Register::Count as usize];
+        /* set the PC to starting position */
+        registers[Register::PC as usize] = PC_START;
+        /* set the condition flag to positive */
+        registers[Register::Cond as usize] = ConditionFlag::Positive as u16;
+        Self { registers }
+    }
+
+    // get and set methods for the Registers
+    pub fn get(&self, r: Register) -> u16 {
+        self.registers[r as usize]
+    }
+
+    pub fn set(&mut self, r: Register, val: u16) {
+        self.registers[r as usize] = val;
+    }
+
+    //update the condition flags
+    pub fn update_flags(&mut self, r: Register) {
+        if self.registers[r as usize] == 0 {
+            self.registers[Register::Cond as usize] = ConditionFlag::Zero as u16;
+        } else if (self.registers[r as usize] >> 15) == 1 {
+            /* a 1 in the leftmost bit indicates negative */
+            self.registers[Register::Cond as usize] = ConditionFlag::Negative as u16;
+        } else {
+            self.registers[Register::Cond as usize] = ConditionFlag::Positive as u16;
+        }
+    }
+}
