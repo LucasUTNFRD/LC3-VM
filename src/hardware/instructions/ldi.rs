@@ -17,7 +17,7 @@ use crate::hardware::register::{Register, Registers};
 
 pub fn ldi(instr: u16, reg: &mut Registers, mem: &Memory) {
     // destination register (DR)
-    let dr: Register = ((instr >> 9) & 0x7).into();
+    let dr: Register = Register::from((instr >> 9) & 0x7);
 
     // Get PCoffset9 from bit [8:0] and sign extend it
     let pc_offset = sign_extend(instr & 0x1FF, 9);

@@ -3,7 +3,7 @@ pub mod add;
 // pub mod br;
 // pub mod jmp;
 // pub mod jsr;
-// pub mod ld;
+pub mod ld;
 pub mod ldi;
 // pub mod ldr;
 // pub mod lea;
