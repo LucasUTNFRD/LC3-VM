@@ -1,4 +1,4 @@
-const PC_START: u16 = 0x3000;
+pub const PC_START: u16 = 0x3000;
 
 /// The LC-3 has 10 total registers,
 /// each of which is 16 bits. Most of them are general purpose,

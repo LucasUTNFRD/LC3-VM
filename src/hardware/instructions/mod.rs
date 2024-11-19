@@ -5,7 +5,7 @@ pub mod add;
 // pub mod jsr;
 pub mod ld;
 pub mod ldi;
-// pub mod ldr;
+pub mod ldr;
 // pub mod lea;
 // pub mod not;
 // pub mod opcode;
