@@ -23,7 +23,7 @@ impl VM {
             let pc = self.reg.get(Register::PC);
             self.reg.set(Register::PC, pc.wrapping_add(1));
             let instr = self.mem.read(pc);
-            let op: OpCode = (instr >> 12).into();
+            let op: OpCode = OpCode::from(instr >> 12);
             match op {
                 OpCode::OpAdd => {
                     //TODO fix this long line
@@ -51,7 +51,7 @@ impl VM {
                     todo!();
                 }
                 OpCode::OpLdr => {
-                    todo!();
+                    instructions::ldr::ldr(instr, &mut self.reg, &self.mem);
                 }
                 OpCode::OpLea => {
                     todo!();

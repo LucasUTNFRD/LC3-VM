@@ -27,7 +27,7 @@ pub fn ldr(instr: u16, reg: &mut Registers, mem: &Memory) {
 
 #[cfg(test)]
 mod tests {
-    use crate::hardware::register::{self, PC_START};
+    use crate::hardware::register::PC_START;
 
     use super::*;
 
