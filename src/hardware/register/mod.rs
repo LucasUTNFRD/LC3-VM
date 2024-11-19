@@ -22,7 +22,7 @@ pub enum Register {
 }
 
 ///condition flags which provide information about the most recently executed calculation.
-enum ConditionFlag {
+pub enum ConditionFlag {
     Positive = 1 << 0,
     Zero = 1 << 1,
     Negative = 1 << 2,
@@ -53,13 +53,15 @@ impl Registers {
 
     //update the condition flags
     pub fn update_flags(&mut self, r: Register) {
-        if self.registers[r as usize] == 0 {
-            self.registers[Register::Cond as usize] = ConditionFlag::Zero as u16;
-        } else if (self.registers[r as usize] >> 15) == 1 {
-            /* a 1 in the leftmost bit indicates negative */
-            self.registers[Register::Cond as usize] = ConditionFlag::Negative as u16;
+        let updated_flag = self.get(r);
+        let flag;
+        if updated_flag == 0 {
+            flag = ConditionFlag::Zero;
+        } else if (updated_flag >> 15) == 1 {
+            flag = ConditionFlag::Negative;
         } else {
-            self.registers[Register::Cond as usize] = ConditionFlag::Positive as u16;
+            flag = ConditionFlag::Positive;
         }
+        self.set(Register::Cond, flag as u16);
     }
 }

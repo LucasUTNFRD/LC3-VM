@@ -1,6 +1,9 @@
-pub mod lc3;
+pub mod instructions;
 pub mod memory;
-pub mod registers;
+pub mod register;
 
-pub use memory::Memory;
-pub use registers::Registers;
+use self::instructions::sign_extend;
+use self::memory::Memory;
+use self::register::Registers;
+
+pub mod lc3;

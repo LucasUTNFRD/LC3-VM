@@ -1,5 +1,8 @@
-use crate::hardware::memory::Memory;
-use crate::hardware::registers::{Register, Registers};
+use super::{
+    instructions::{self, sign_extend},
+    memory::Memory,
+    register::{Register, Registers},
+};
 
 // define the opcodes
 #[derive(Debug, Copy, Clone)]
@@ -51,13 +54,6 @@ pub struct VM {
     reg: Registers,
 }
 
-fn sign_extend(mut x: u16, bit_count: u16) -> u16 {
-    if (x >> (bit_count - 1)) & 1 == 1 {
-        x |= 0xFFFF << bit_count;
-    }
-    x
-}
-
 impl VM {
     pub fn new() -> Self {
         Self {
@@ -75,36 +71,10 @@ impl VM {
             let op: OpCode = (instr >> 12).into();
             match op {
                 OpCode::OpAdd => {
-                    // get the destination register (DR)
-                    let _r0 = (instr >> 9) & 0x7;
-                    // get the first operand (SR1)
-                    let _r1 = (instr >> 6) & 0x7;
-                    // check if the instruction is in immediate mode
-                    let imm_flag = (instr >> 5) & 0x1;
-                    if imm_flag == 1 {
-                        let imm5 = sign_extend(instr & 0x1F, 5);
-                        self.reg
-                            .set(Register::R0, self.reg.get(Register::R0) + imm5);
-                    } else {
-                        let _r2 = instr & 0x7;
-                        self.reg.set(
-                            Register::R0,
-                            self.reg.get(Register::R1) + self.reg.get(Register::R2),
-                        );
-                    }
-                    self.reg.update_flags(Register::R0);
+                    instructions::add::add(instr, &mut self.reg);
                 }
                 OpCode::OpLdi => {
-                    // destination register (DR)
-                    let _r0 = (instr >> 9) & 0x7;
-                    // PCoffset 9
-                    let pc_offset = sign_extend(instr & 0x1FF, 9);
-                    // add pc_offset to the current PC, look at that memory location to get the final address
-                    let final_address = self
-                        .mem
-                        .read(self.reg.get(Register::PC).wrapping_add(pc_offset));
-                    self.reg.set(Register::R0, self.mem.read(final_address));
-                    self.reg.update_flags(Register::R0);
+                    todo!();
                 }
                 OpCode::OpAnd => {
                     todo!();
