@@ -21,6 +21,24 @@ pub enum Register {
     Count,
 }
 
+impl From<u16> for Register {
+    fn from(value: u16) -> Self {
+        match value {
+            0 => Register::R0,
+            1 => Register::R1,
+            2 => Register::R2,
+            3 => Register::R3,
+            4 => Register::R4,
+            5 => Register::R5,
+            6 => Register::R6,
+            7 => Register::R7,
+            8 => Register::PC,
+            9 => Register::Cond,
+            _ => panic!("Invalid register: {}", value),
+        }
+    }
+}
+
 ///condition flags which provide information about the most recently executed calculation.
 pub enum ConditionFlag {
     Positive = 1 << 0,
@@ -63,5 +81,9 @@ impl Registers {
             flag = ConditionFlag::Positive;
         }
         self.set(Register::Cond, flag as u16);
+    }
+
+    pub fn get_flag(&self) -> u16 {
+        self.registers[Register::Cond as usize]
     }
 }
