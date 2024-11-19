@@ -97,4 +97,6 @@ mod tests {
 
         assert_eq!(reg.get(Register::R3), 0x5678);
     }
+
+    //TODO extend test to cover edge cases
 }
