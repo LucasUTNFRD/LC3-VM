@@ -10,7 +10,7 @@ pub mod lea;
 // pub mod not;
 // pub mod opcode;
 pub mod st;
-// pub mod sti;
+pub mod sti;
 // pub mod str;
 // pub mod trap;
 pub mod opcode;
