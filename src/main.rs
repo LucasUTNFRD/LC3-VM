@@ -35,6 +35,14 @@ impl VM {
     pub fn read_register(&self, r: Register) -> u16 {
         self.registers.get(r)
     }
+
+    pub fn write_register(&mut self, r: Register, value: u16) {
+        self.registers.set(r, value);
+    }
+
+    pub fn update_flags(&mut self, r: Register) {
+        self.registers.update_flags(r);
+    }
 }
 
 fn main() {
@@ -54,11 +62,12 @@ fn main() {
 
     loop {
         let instruction = vm.read_memory(vm.read_register(Register::PC) + 1);
+        // TODO: shift instruction and get opcode
         let opcode: Opcode = instruction >> 12;
 
         match opcode {
-            Opcode::Br => todo!(),
             Opcode::Add => todo!(),
+            Opcode::Br => todo!(),
             Opcode::Ld => todo!(),
             Opcode::St => todo!(),
             Opcode::Jsr => todo!(),
