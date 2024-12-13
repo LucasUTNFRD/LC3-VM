@@ -23,6 +23,18 @@ impl VM {
             registers: Registers::new(),
         }
     }
+
+    pub fn read_memory(&self, address: u16) -> u16 {
+        self.memory.read(address)
+    }
+
+    pub fn write_memory(&mut self, address: u16, value: u16) {
+        self.memory.write(address, value);
+    }
+
+    pub fn read_register(&self, r: Register) -> u16 {
+        self.registers.get(r)
+    }
 }
 
 fn main() {
@@ -41,7 +53,7 @@ fn main() {
     let vm = VM::new();
 
     loop {
-        let instruction = todo!();
+        let instruction = vm.read_memory(vm.read_register(Register::PC) + 1);
         let opcode: Opcode = instruction >> 12;
 
         match opcode {
