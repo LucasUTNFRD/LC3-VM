@@ -47,7 +47,8 @@ impl VM {
             // 2. Increment the PC
             self.registers.pc = self.registers.pc.wrapping_add(1);
 
-            let opcode: Opcode = Opcode::from((instruction >> 12) & 0xF);
+            let instruction = (instruction >> 12) & 0xF; 
+            let opcode: Opcode = Opcode::from(instruction);
 
             self.execute(opcode, instruction);
         }
