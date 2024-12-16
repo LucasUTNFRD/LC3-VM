@@ -1,5 +1,9 @@
 const MEMORY_MAX: usize = 1 << 16;
 
+enum VMError {
+    InvalidMemoryAccess,
+}
+
 pub struct Memory {
     mem: [u16; MEMORY_MAX],
 }
@@ -12,9 +16,12 @@ impl Memory {
     }
 
     /// Safe read memory method
-    pub fn read(&self, address: u16) -> u16 {
+    pub fn read(&self, address: u16) -> Result<u16, VMError> {
         let addr: usize = address.into();
-        self.mem.get(addr).copied().unwrap_or(0)
+        self.mem
+            .get(addr)
+            .copied()
+            .ok_or(VMError::InvalidMemoryAccess)
     }
 
     /// Safe memory write method
