@@ -20,7 +20,7 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
 - [ ] Implement the LC-3 instructions.
   - [x] ADD (Add)
   - [x] AND (Bitwise AND)
-  - [ ] BR (Branch)
+  - [x] BR (Branch)
   - [ ] JMP (Jump)
   - [ ] JSR (Jump to Subroutine)
   - [ ] LD (Load)

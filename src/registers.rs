@@ -3,7 +3,7 @@ use crate::errors::VMError;
 const PC_START: u16 = 0x3000;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum RegisterFlags {
+pub enum RegisterFlags {
     Pos = 1 << 0,
     Zro = 1 << 1,
     Neg = 1 << 2,
@@ -14,7 +14,7 @@ const NUM_REGISTERS: usize = 8; // R0-R7
 pub struct Registers {
     regs: [u16; NUM_REGISTERS],
     pub pc: u16,
-    condition: RegisterFlags,
+    pub condition: RegisterFlags,
 }
 
 impl Registers {

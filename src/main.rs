@@ -5,7 +5,7 @@ mod registers;
 
 use errors::VMError;
 use memory::Memory;
-use opdcodes::{add, ldi, Opcode};
+use opdcodes::{add, and, conditional_branch, ldi, Opcode};
 use registers::Registers;
 
 struct VM {
@@ -58,12 +58,12 @@ impl VM {
     }
     fn execute(&mut self, opcode: Opcode, instruction: u16) -> Result<(), VMError> {
         match opcode {
-            Opcode::Br => todo!(),
+            Opcode::Br => conditional_branch(self, instruction),
             Opcode::Add => add(self, instruction),
             Opcode::Ld => todo!(),
             Opcode::St => todo!(),
             Opcode::Jsr => todo!(),
-            Opcode::And => todo!(),
+            Opcode::And => and(self, instruction),
             Opcode::Ldr => todo!(),
             Opcode::Str => todo!(),
             Opcode::Rti => todo!(),

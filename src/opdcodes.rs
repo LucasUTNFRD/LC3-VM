@@ -1,5 +1,6 @@
 // use crate::registers::Register;
 use crate::errors::VMError;
+use crate::registers::RegisterFlags;
 use crate::VM;
 
 #[repr(u16)]
@@ -124,6 +125,25 @@ pub fn and(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     vm.registers.set(dr.into(), value);
 
     vm.update_flags(dr.into());
+
+    Ok(())
+}
+
+pub fn conditional_branch(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let n = ((instruction >> 11) & 0x1) != 0;
+    let z = ((instruction >> 10) & 0x1) != 0;
+    let p = ((instruction >> 9) & 0x1) != 0;
+
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let condition = vm.registers.condition;
+
+    if (n && condition == RegisterFlags::Neg)
+        || (z && condition == RegisterFlags::Zro)
+        || (p && condition == RegisterFlags::Pos)
+    {
+        vm.registers.pc = vm.registers.pc.wrapping_add(pc_offset);
+    }
 
     Ok(())
 }
@@ -266,6 +286,106 @@ mod tests {
 
         // Verify result (1111 & 0011 = 0011 = 3)
         assert_eq!(vm.read_register(0)?, 0b0011);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_br_positive_flag() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set positive flag by writing a positive value to R0
+        vm.write_register(0, 1);
+        vm.update_flags(0);
+
+        // Create BR instruction: BRp #2
+        // Format: 0000 001 000000010
+        // 0000 = BR opcode
+        // 001 = only p flag set (n=0, z=0, p=1)
+        // 000000010 = offset of 2
+        let instruction = 0b0000_001_000000010;
+
+        let initial_pc = vm.registers.pc;
+
+        conditional_branch(&mut vm, instruction)?;
+
+        // PC should be incremented by 2
+        assert_eq!(vm.registers.pc, initial_pc + 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_br_negative_flag() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set negative flag by writing a negative value to R0
+        vm.write_register(0, 0x8000); // Most significant bit set
+        vm.update_flags(0);
+
+        // Create BR instruction: BRn #-2
+        // Format: 0000 100 111111110
+        // 0000 = BR opcode
+        // 100 = only n flag set (n=1, z=0, p=0)
+        // 111111110 = offset of -2 in 9-bit two's complement
+        let instruction = 0b0000_100_111111110;
+
+        let initial_pc = vm.registers.pc;
+
+        conditional_branch(&mut vm, instruction)?;
+
+        // PC should be decremented by 2
+        assert_eq!(vm.registers.pc, initial_pc - 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_br_zero_flag() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set zero flag by writing zero to R0
+        vm.write_register(0, 0);
+        vm.update_flags(0);
+
+        // Create BR instruction: BRz #1
+        // Format: 0000 010 000000001
+        // 0000 = BR opcode
+        // 010 = only z flag set (n=0, z=1, p=0)
+        // 000000001 = offset of 1
+        let instruction = 0b0000_010_000000001;
+
+        let initial_pc = vm.registers.pc;
+
+        conditional_branch(&mut vm, instruction)?;
+
+        // PC should be incremented by 1
+        assert_eq!(vm.registers.pc, initial_pc + 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_br_multiple_flags() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set zero flag
+        vm.write_register(0, 0);
+        vm.update_flags(0);
+
+        // Create BR instruction: BRnzp #2 (should branch because all flags are checked)
+        // Format: 0000 111 000000010
+        // 0000 = BR opcode
+        // 111 = all flags set (n=1, z=1, p=1)
+        // 000000010 = offset of 2
+        let instruction = 0b0000_111_000000010;
+
+        let initial_pc = vm.registers.pc;
+
+        conditional_branch(&mut vm, instruction)?;
+
+        // PC should be incremented by 2
+        assert_eq!(vm.registers.pc, initial_pc + 2);
 
         Ok(())
     }
