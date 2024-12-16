@@ -83,6 +83,29 @@ pub fn add(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn ldi(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+
+    // Extract and sign-extend PC offset from instruction bits [8:0]
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    // Calculate address of pointer by adding PC offset to current PC
+    let pointer_addr = vm.registers.pc.wrapping_add(pc_offset);
+
+    // Read memory at pointer_addr to get target address
+    let target_addr = vm.read_memory(pointer_addr)?;
+
+    // Read memory at target address to get final value
+    let value = vm.read_memory(target_addr)?;
+
+    // Store value in destination register
+    vm.registers.set(dr.into(), value);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,6 +162,38 @@ mod tests {
 
         // Verify result
         assert_eq!(vm.read_register(0)?, 8); // 5 + 3 = 8
+        Ok(())
+    }
+
+    #[test]
+    fn test_ldi_basic() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Setup memory for indirect loading
+        let initial_address = vm.registers.pc.wrapping_add(2); // PC + 2
+        let final_address = 0x3100;
+        let expected_value = 0x4242;
+
+        // Store the final address at the initial address
+        vm.write_memory(initial_address, final_address);
+
+        // Store the actual value at the final address
+        vm.write_memory(final_address, expected_value);
+
+        // Create LDI instruction: LDI R0, #2
+        // Format: 1010 000 000000010
+        // 1010 = LDI opcode
+        // 000 = destination register (R0)
+        // 000000010 = PC offset of 2
+        let pc_offset: u16 = 2;
+        let instruction = 0b1010_000_000000010;
+
+        // Execute LDI instruction
+        ldi(&mut vm, instruction)?;
+
+        // Verify the value was loaded correctly
+        assert_eq!(vm.read_register(0)?, expected_value);
+
         Ok(())
     }
 }
