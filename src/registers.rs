@@ -41,7 +41,7 @@ impl Registers {
 
     /// Any time a value is written to a register, the condition flags should be updated
     pub fn update_flags(&mut self, register: usize) {
-        // Acces the register value in field regs and update the flag
+        // Access the register value in field regs and update the flag
         if let Some(reg) = self.regs.get(register) {
             self.condition = match reg {
                 0 => RegisterFlags::Zro,
