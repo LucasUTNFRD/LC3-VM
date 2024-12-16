@@ -189,6 +189,35 @@ pub fn load(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn load_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+    let base_r = (instruction >> 6) & 0x7;
+    let offset = sign_extend(instruction & 0x3F, 6);
+
+    let address = vm.registers.get(base_r.into())?.wrapping_add(offset);
+
+    let value = vm.read_memory(address)?;
+
+    vm.registers.set(dr.into(), value);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
+pub fn load_effective_address(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    vm.registers.set(dr.into(), address);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -550,6 +579,81 @@ mod tests {
 
         // Verify condition flags were updated
         assert_eq!(vm.registers.condition, RegisterFlags::Pos);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_register() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up base register (R1) with base address
+        let base_address = 0x3000;
+        vm.write_register(1, base_address);
+
+        // Set up test value in memory at base_address + offset
+        let offset = 2;
+        let expected_value = 0x4240;
+        let target_address = base_address.wrapping_add(offset);
+        vm.write_memory(target_address, expected_value);
+
+        // Create LDR instruction: LDR R0, R1, #2
+        // Format: 0110 000 001 000010
+        // 0110 = LDR opcode
+        // 000 = destination register (R0)
+        // 001 = base register (R1)
+        // 000010 = offset of 2
+        let instruction = 0b0110_000_001_000010;
+
+        load_register(&mut vm, instruction)?;
+
+        // Verify value was loaded into R0
+        assert_eq!(vm.read_register(0)?, 0x4240);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_register_updates_flags() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+        let base_address = 0x3000;
+        vm.write_register(1, base_address);
+
+        // Test positive value
+        vm.write_memory(base_address, 1);
+        load_register(&mut vm, 0b0110_000_001_000000)?;
+        assert_eq!(vm.registers.condition, RegisterFlags::Pos);
+
+        // Test zero value
+        vm.write_memory(base_address.wrapping_add(1), 0);
+        load_register(&mut vm, 0b0110_000_001_000001)?;
+        assert_eq!(vm.registers.condition, RegisterFlags::Zro);
+
+        // Test negative value
+        vm.write_memory(base_address.wrapping_add(2), 0x8000);
+        load_register(&mut vm, 0b0110_000_001_000010)?;
+        assert_eq!(vm.registers.condition, RegisterFlags::Neg);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_effective_address_basic() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+        let initial_pc = vm.registers.pc;
+        let offset = 5;
+
+        // Create LEA instruction: LEA R0, #5
+        // Format: 1110 000 000000101
+        // 1110 = LEA opcode
+        // 000 = destination register (R0)
+        // 000000101 = offset of 5
+        let instruction = 0b1110_000_000000101;
+
+        load_effective_address(&mut vm, instruction)?;
+
+        // Verify the calculated address was stored in R0
+        assert_eq!(vm.read_register(0)?, initial_pc.wrapping_add(offset));
 
         Ok(())
     }
