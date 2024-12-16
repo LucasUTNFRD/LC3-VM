@@ -148,6 +148,31 @@ pub fn conditional_branch(vm: &mut VM, instruction: u16) -> Result<(), VMError> 
     Ok(())
 }
 
+pub fn jmp(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let base_r = (instruction >> 6) & 0x7;
+    vm.registers.pc = vm.registers.get(base_r.into())?;
+    Ok(())
+}
+
+pub fn jump_subroutine(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let long_flag = (instruction >> 11) & 0x1;
+
+    // Save the current PC in R7
+    vm.registers.set(7, vm.registers.pc);
+
+    if long_flag == 0 {
+        // JSRR
+        let base_r = (instruction >> 6) & 0x7;
+        vm.registers.pc = vm.registers.get(base_r.into())?;
+    } else {
+        // JSR
+        let pc_offset = sign_extend(instruction & 0x7FF, 11);
+        vm.registers.pc = vm.registers.pc.wrapping_add(pc_offset);
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,7 +252,6 @@ mod tests {
         // 1010 = LDI opcode
         // 000 = destination register (R0)
         // 000000010 = PC offset of 2
-        let pc_offset: u16 = 2;
         let instruction = 0b1010_000_000000010;
 
         // Execute LDI instruction
@@ -386,6 +410,102 @@ mod tests {
 
         // PC should be incremented by 2
         assert_eq!(vm.registers.pc, initial_pc + 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_jmp_basic() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up target address in R1
+        let target_address = 0x3100;
+        vm.write_register(1, target_address);
+
+        // Create JMP instruction: JMP R1
+        // Format: 1100 000 001 000000
+        // 1100 = JMP opcode
+        // 000 = unused
+        // 001 = base register (R1)
+        // 000000 = unused
+        let instruction = 0b1100_000_001_000000;
+
+        jmp(&mut vm, instruction)?;
+
+        // Verify PC was updated to target address
+        assert_eq!(vm.registers.pc, target_address);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_jmp_ret() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up return address in R7
+        let return_address = 0x3200;
+        vm.write_register(7, return_address);
+
+        // Create RET instruction (JMP R7)
+        // Format: 1100 000 111 000000
+        let instruction = 0b1100_000_111_000000;
+
+        jmp(&mut vm, instruction)?;
+
+        // Verify PC was updated to return address
+        assert_eq!(vm.registers.pc, return_address);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_jsr_long() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+        let initial_pc = vm.registers.pc;
+
+        // Create JSR instruction with positive offset
+        // Format: 0100 1 00000000101
+        // 0100 = JSR opcode
+        // 1 = long flag (JSR)
+        // 00000000101 = offset of 5
+        let instruction = 0b0100_1_00000000101;
+
+        jump_subroutine(&mut vm, instruction)?;
+
+        // Verify R7 contains original PC
+        assert_eq!(vm.read_register(7)?, initial_pc);
+
+        // Verify PC was updated correctly
+        assert_eq!(vm.registers.pc, initial_pc + 5);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_jsrr() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+        let initial_pc = vm.registers.pc;
+
+        // Set up target address in R1
+        let target_address = 0x3100;
+        vm.write_register(1, target_address);
+
+        // Create JSRR instruction
+        // Format: 0100 0 00 001 000000
+        // 0100 = JSR opcode
+        // 0 = register mode flag (JSRR)
+        // 00 = unused
+        // 001 = base register (R1)
+        // 000000 = unused
+        let instruction = 0b0100_0_00_001_000000;
+
+        jump_subroutine(&mut vm, instruction)?;
+
+        // Verify R7 contains original PC
+        assert_eq!(vm.read_register(7)?, initial_pc);
+
+        // Verify PC was updated to target address
+        assert_eq!(vm.registers.pc, target_address);
 
         Ok(())
     }

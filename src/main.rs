@@ -5,7 +5,7 @@ mod registers;
 
 use errors::VMError;
 use memory::Memory;
-use opdcodes::{add, and, conditional_branch, ldi, Opcode};
+use opdcodes::{add, and, conditional_branch, jmp, jump_subroutine, ldi, Opcode};
 use registers::Registers;
 
 struct VM {
@@ -62,7 +62,7 @@ impl VM {
             Opcode::Add => add(self, instruction),
             Opcode::Ld => todo!(),
             Opcode::St => todo!(),
-            Opcode::Jsr => todo!(),
+            Opcode::Jsr => jump_subroutine(self, instruction),
             Opcode::And => and(self, instruction),
             Opcode::Ldr => todo!(),
             Opcode::Str => todo!(),
@@ -70,7 +70,7 @@ impl VM {
             Opcode::Not => todo!(),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => todo!(),
-            Opcode::Jmp => todo!(),
+            Opcode::Jmp => jmp(self, instruction),
             Opcode::Res => todo!(),
             Opcode::Lea => todo!(),
             Opcode::Trap => todo!(),
