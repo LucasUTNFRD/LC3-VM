@@ -63,25 +63,25 @@ fn main() {
     loop {
         let instruction = vm.read_memory(vm.read_register(Register::PC) + 1);
         // TODO: shift instruction and get opcode
-        let opcode: Opcode = instruction >> 12;
+        // let opcode = (instruction >> 12);
 
-        match opcode {
-            Opcode::Add => todo!(),
-            Opcode::Br => todo!(),
-            Opcode::Ld => todo!(),
-            Opcode::St => todo!(),
-            Opcode::Jsr => todo!(),
-            Opcode::And => todo!(),
-            Opcode::Ldr => todo!(),
-            Opcode::Str => todo!(),
-            Opcode::Rti => todo!(),
-            Opcode::Not => todo!(),
-            Opcode::Ldi => todo!(),
-            Opcode::Sti => todo!(),
-            Opcode::Jmp => todo!(),
-            Opcode::Res => todo!(),
-            Opcode::Lea => todo!(),
-            Opcode::Trap => todo!(),
-        };
+        // match opcode.into() {
+        //     Opcode::Add => todo!(),
+        //     Opcode::Br => todo!(),
+        //     Opcode::Ld => todo!(),
+        //     Opcode::St => todo!(),
+        //     Opcode::Jsr => todo!(),
+        //     Opcode::And => todo!(),
+        //     Opcode::Ldr => todo!(),
+        //     Opcode::Str => todo!(),
+        //     Opcode::Rti => todo!(),
+        //     Opcode::Not => todo!(),
+        //     Opcode::Ldi => todo!(),
+        //     Opcode::Sti => todo!(),
+        //     Opcode::Jmp => todo!(),
+        //     Opcode::Res => todo!(),
+        //     Opcode::Lea => todo!(),
+        //     Opcode::Trap => todo!(),
+        // };
     }
 }
