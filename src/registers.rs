@@ -26,7 +26,6 @@ impl Registers {
         }
     }
 
-    /// Get the value of a register without getting clippy warnings
     pub fn get(&self, register: usize) -> Result<u16, VMError> {
         self.regs
             .get(register)
