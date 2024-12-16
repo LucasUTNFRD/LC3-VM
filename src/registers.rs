@@ -1,3 +1,5 @@
+use crate::errors::VMError;
+
 const PC_START: u16 = 0x3000;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -25,8 +27,11 @@ impl Registers {
     }
 
     /// Get the value of a register without getting clippy warnings
-    pub fn get(&self, register: usize) -> Option<u16> {
-        self.regs.get(register).copied()
+    pub fn get(&self, register: usize) -> Result<u16, VMError> {
+        self.regs
+            .get(register)
+            .copied()
+            .ok_or(VMError::InvalidRegister)
     }
 
     pub fn set(&mut self, register: usize, value: u16) {
@@ -55,14 +60,10 @@ mod tests {
     #[test]
     fn test_registers_init() {
         let regs = Registers::new();
-        assert_eq!(regs.get(0), Some(0));
-        assert_eq!(regs.get(1), Some(0));
-        assert_eq!(regs.get(2), Some(0));
-        assert_eq!(regs.get(3), Some(0));
-        assert_eq!(regs.get(4), Some(0));
-        assert_eq!(regs.get(5), Some(0));
-        assert_eq!(regs.get(6), Some(0));
-        assert_eq!(regs.get(7), Some(0));
+
+        for reg in regs.regs.iter() {
+            assert_eq!(*reg, 0);
+        }
 
         // assert that condition flags are set to zero
         assert_eq!(regs.condition, RegisterFlags::Zro);

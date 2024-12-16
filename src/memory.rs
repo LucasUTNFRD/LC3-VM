@@ -1,8 +1,6 @@
-const MEMORY_MAX: usize = 1 << 16;
+use crate::errors::VMError;
 
-enum VMError {
-    InvalidMemoryAccess,
-}
+const MEMORY_MAX: usize = 1 << 16;
 
 pub struct Memory {
     mem: [u16; MEMORY_MAX],

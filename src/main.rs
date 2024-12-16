@@ -1,7 +1,9 @@
+mod errors;
 mod memory;
 mod opdcodes;
 mod registers;
 
+use errors::VMError;
 use memory::Memory;
 use opdcodes::Opcode;
 use registers::Registers;
@@ -19,7 +21,8 @@ impl VM {
         }
     }
 
-    pub fn read_memory(&self, address: u16) -> u16 {
+    // Implement read_memory method using memory.read wich returns a Result
+    pub fn read_memory(&self, address: u16) -> Result<u16, VMError> {
         self.memory.read(address)
     }
 
@@ -27,8 +30,8 @@ impl VM {
         self.memory.write(address, value);
     }
 
-    pub fn read_register(&self, r: usize) -> u16 {
-        self.registers.get(r).unwrap_or(0)
+    pub fn read_register(&self, r: usize) -> Result<u16, VMError> {
+        self.registers.get(r)
     }
 
     pub fn write_register(&mut self, r: usize, value: u16) {
@@ -39,15 +42,15 @@ impl VM {
         self.registers.update_flags(r);
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), VMError> {
         loop {
             // 1. Load one instruction from memory at the address of the PC
-            let instruction = self.read_memory(self.registers.pc);
+            let instruction = self.read_memory(self.registers.pc)?;
 
             // 2. Increment the PC
             self.registers.pc = self.registers.pc.wrapping_add(1);
 
-            let instruction = (instruction >> 12) & 0xF; 
+            let instruction = (instruction >> 12) & 0xF;
             let opcode: Opcode = Opcode::from(instruction);
 
             self.execute(opcode, instruction);
