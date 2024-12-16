@@ -106,6 +106,28 @@ pub fn ldi(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn and(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+
+    let sr1 = (instruction >> 6) & 0x7;
+
+    let imm_flag = (instruction >> 5) & 0x1;
+
+    let value: u16 = if imm_flag == 1 {
+        let imm5 = sign_extend(instruction & 0x1F, 5);
+        vm.registers.get(sr1.into())? & imm5
+    } else {
+        let sr2 = instruction & 0x7;
+        vm.registers.get(sr1.into())? & vm.registers.get(sr2.into())?
+    };
+
+    vm.registers.set(dr.into(), value);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,6 +215,57 @@ mod tests {
 
         // Verify the value was loaded correctly
         assert_eq!(vm.read_register(0)?, expected_value);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_and_register_mode() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Setup initial register values
+        vm.write_register(1, 0b1100); // R1 = 12 (1100 in binary)
+        vm.write_register(2, 0b1010); // R2 = 10 (1010 in binary)
+
+        // Create AND instruction: AND R0, R1, R2
+        // Format: 0101 000 001 000 010
+        // 0101 = AND opcode
+        // 000 = destination register (R0)
+        // 001 = first source register (R1)
+        // 0 = register mode flag
+        // 010 = second source register (R2)
+        let instruction = 0b0101_000_001_0_00_010;
+
+        // Execute AND instruction
+        and(&mut vm, instruction)?;
+
+        // Verify result (1100 & 1010 = 1000 = 8)
+        assert_eq!(vm.read_register(0)?, 0b1000);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_and_immediate_mode() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Setup initial register value
+        vm.write_register(1, 0b1111); // R1 = 15 (1111 in binary)
+
+        // Create AND instruction: AND R0, R1, #3
+        // Format: 0101 000 001 1 00011
+        // 0101 = AND opcode
+        // 000 = destination register (R0)
+        // 001 = first source register (R1)
+        // 1 = immediate mode flag
+        // 00011 = immediate value (3)
+        let instruction = 0b0101_000_001_1_00011;
+
+        // Execute AND instruction
+        and(&mut vm, instruction)?;
+
+        // Verify result (1111 & 0011 = 0011 = 3)
+        assert_eq!(vm.read_register(0)?, 0b0011);
 
         Ok(())
     }

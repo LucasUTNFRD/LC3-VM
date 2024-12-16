@@ -19,7 +19,7 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
   - [x] Implement the LC-3 condition flags.
 - [ ] Implement the LC-3 instructions.
   - [x] ADD (Add)
-  - [ ] AND (Bitwise AND)
+  - [x] AND (Bitwise AND)
   - [ ] BR (Branch)
   - [ ] JMP (Jump)
   - [ ] JSR (Jump to Subroutine)

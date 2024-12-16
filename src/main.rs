@@ -5,7 +5,7 @@ mod registers;
 
 use errors::VMError;
 use memory::Memory;
-use opdcodes::{add, Opcode};
+use opdcodes::{add, ldi, Opcode};
 use registers::Registers;
 
 struct VM {
@@ -68,7 +68,7 @@ impl VM {
             Opcode::Str => todo!(),
             Opcode::Rti => todo!(),
             Opcode::Not => todo!(),
-            Opcode::Ldi => todo!(),
+            Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => todo!(),
             Opcode::Jmp => todo!(),
             Opcode::Res => todo!(),
