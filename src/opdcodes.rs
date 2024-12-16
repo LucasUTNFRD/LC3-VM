@@ -1,4 +1,4 @@
-use crate::registers::Register;
+// use crate::registers::Register;
 use crate::VM;
 
 #[repr(u16)]
@@ -55,27 +55,27 @@ fn sign_extend(number: u16, bit_count: i32) -> u16 {
     result
 }
 
-pub fn add(vm: &mut VM, instruction: u16) {
-    // Get destination register (DR)
-    let r0 = Register::from((instruction >> 9) & 0x7);
+// pub fn add(vm: &mut VM, instruction: u16) {
+//     // Get destination register (DR)
+//     let r0 = Register::from((instruction >> 9) & 0x7);
 
-    // Get first source register (SR1)
-    let r1 = Register::from((instruction >> 6) & 0x7);
+//     // Get first source register (SR1)
+//     let r1 = Register::from((instruction >> 6) & 0x7);
 
-    let imm_flag = (instruction >> 5) & 0x1;
+//     let imm_flag = (instruction >> 5) & 0x1;
 
-    let mut value = 0;
-    if imm_flag == 1 {
-        let imm5 = sign_extend(instruction & 0x1F, 5);
-        value = vm.read_register(r1).wrapping_add(imm5);
-        // vm.write_register(r0, vm.read_register(r1) + imm5);
-    } else {
-        let r2 = Register::from(instruction & 0x7);
-        value = vm.read_register(r1).wrapping_add(vm.read_register(r2))
-        // vm.write_register(r0, vm.read_register(r1) + vm.read_register(r2));
-    }
+//     let mut value = 0;
+//     if imm_flag == 1 {
+//         let imm5 = sign_extend(instruction & 0x1F, 5);
+//         value = vm.read_register(r1).wrapping_add(imm5);
+//         // vm.write_register(r0, vm.read_register(r1) + imm5);
+//     } else {
+//         let r2 = Register::from(instruction & 0x7);
+//         value = vm.read_register(r1).wrapping_add(vm.read_register(r2))
+//         // vm.write_register(r0, vm.read_register(r1) + vm.read_register(r2));
+//     }
 
-    vm.write_register(r0, value);
+//     vm.write_register(r0, value);
 
-    vm.update_flags(r0);
-}
+//     vm.update_flags(r0);
+// }

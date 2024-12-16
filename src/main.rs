@@ -1,15 +1,10 @@
-// Load one instruction from memory at the address of the PC register.
-// Increment the PC register.
-// Look at the opcode to determine which type of instruction it should perform.
-// Perform the instruction using the parameters in the instruction.
-// Go back to step 1.
 mod memory;
 mod opdcodes;
 mod registers;
 
 use memory::Memory;
 use opdcodes::Opcode;
-use registers::{Register, Registers};
+use registers::Registers;
 
 struct VM {
     memory: Memory,
@@ -32,16 +27,33 @@ impl VM {
         self.memory.write(address, value);
     }
 
-    pub fn read_register(&self, r: Register) -> u16 {
-        self.registers.get(r)
+    pub fn read_register(&self, r: usize) -> u16 {
+        self.registers.get(r).unwrap_or(0)
     }
 
-    pub fn write_register(&mut self, r: Register, value: u16) {
+    pub fn write_register(&mut self, r: usize, value: u16) {
         self.registers.set(r, value);
     }
 
-    pub fn update_flags(&mut self, r: Register) {
+    pub fn update_flags(&mut self, r: usize) {
         self.registers.update_flags(r);
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            // 1. Load one instruction from memory at the address of the PC
+            let instruction = self.read_memory(self.registers.pc);
+
+            // 2. Increment the PC
+            self.registers.pc = self.registers.pc.wrapping_add(1);
+
+            let opcode: Opcode = Opcode::from((instruction >> 12) & 0xF);
+
+            self.execute(opcode, instruction);
+        }
+    }
+    pub fn execute(&mut self, opcode: Opcode, instruction: u16) {
+        todo!()
     }
 }
 
@@ -58,30 +70,7 @@ fn main() {
     // TODO: Load the program into memory
 
     // Main loop
-    let vm = VM::new();
+    let mut vm = VM::new();
 
-    loop {
-        let instruction = vm.read_memory(vm.read_register(Register::PC) + 1);
-        // TODO: shift instruction and get opcode
-        // let opcode = (instruction >> 12);
-
-        // match opcode.into() {
-        //     Opcode::Add => todo!(),
-        //     Opcode::Br => todo!(),
-        //     Opcode::Ld => todo!(),
-        //     Opcode::St => todo!(),
-        //     Opcode::Jsr => todo!(),
-        //     Opcode::And => todo!(),
-        //     Opcode::Ldr => todo!(),
-        //     Opcode::Str => todo!(),
-        //     Opcode::Rti => todo!(),
-        //     Opcode::Not => todo!(),
-        //     Opcode::Ldi => todo!(),
-        //     Opcode::Sti => todo!(),
-        //     Opcode::Jmp => todo!(),
-        //     Opcode::Res => todo!(),
-        //     Opcode::Lea => todo!(),
-        //     Opcode::Trap => todo!(),
-        // };
-    }
+    vm.run();
 }

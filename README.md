@@ -14,8 +14,7 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
 
 ## TODO
 - [ ] Implement the LC-3 architecture.
-  - [ ] Implement the LC-3 memory.
-  - [ ] Implement the LC-3 registers.
-  - [ ] Implement the LC-3 condition flags.
-  - [ ] Implement the LC-3 instructions.
+  - [x] Implement the LC-3 memory.
+  - [x] Implement the LC-3 registers.
+  - [x] Implement the LC-3 condition flags.
 - [ ] Implement the LC-3 instructions.
