@@ -5,7 +5,7 @@ mod registers;
 
 use errors::VMError;
 use memory::Memory;
-use opdcodes::Opcode;
+use opdcodes::{add, Opcode};
 use registers::Registers;
 
 struct VM {
@@ -53,11 +53,28 @@ impl VM {
             let instruction = (instruction >> 12) & 0xF;
             let opcode: Opcode = Opcode::from(instruction);
 
-            self.execute(opcode, instruction);
+            self.execute(opcode, instruction)?;
         }
     }
-    pub fn execute(&mut self, opcode: Opcode, instruction: u16) {
-        todo!()
+    fn execute(&mut self, opcode: Opcode, instruction: u16) -> Result<(), VMError> {
+        match opcode {
+            Opcode::Br => todo!(),
+            Opcode::Add => add(self, instruction),
+            Opcode::Ld => todo!(),
+            Opcode::St => todo!(),
+            Opcode::Jsr => todo!(),
+            Opcode::And => todo!(),
+            Opcode::Ldr => todo!(),
+            Opcode::Str => todo!(),
+            Opcode::Rti => todo!(),
+            Opcode::Not => todo!(),
+            Opcode::Ldi => todo!(),
+            Opcode::Sti => todo!(),
+            Opcode::Jmp => todo!(),
+            Opcode::Res => todo!(),
+            Opcode::Lea => todo!(),
+            Opcode::Trap => todo!(),
+        }
     }
 }
 

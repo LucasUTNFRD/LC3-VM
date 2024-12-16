@@ -1,4 +1,5 @@
 // use crate::registers::Register;
+use crate::errors::VMError;
 use crate::VM;
 
 #[repr(u16)]
@@ -45,7 +46,7 @@ impl From<u16> for Opcode {
     }
 }
 
-fn sign_extend(number: u16, bit_count: i32) -> u16 {
+pub fn sign_extend(number: u16, bit_count: i32) -> u16 {
     let mut result = number;
     if let Some(shift_amount) = bit_count.checked_sub(1) {
         if (number >> shift_amount & 1) == 1 {
@@ -55,27 +56,89 @@ fn sign_extend(number: u16, bit_count: i32) -> u16 {
     result
 }
 
-// pub fn add(vm: &mut VM, instruction: u16) {
-//     // Get destination register (DR)
-//     let r0 = Register::from((instruction >> 9) & 0x7);
+/// ADD takes two values and stores them in a register.
+/// - In register mode, the second value to add is found in a register.
+/// - In immediate mode, the second value is embedded in the right-most 5 bits of the instruction.
+/// - Values which are shorter than 16 bits need to be sign extended.
+/// - Any time an instruction modifies a register, the condition flags need to be updated.
+pub fn add(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
 
-//     // Get first source register (SR1)
-//     let r1 = Register::from((instruction >> 6) & 0x7);
+    let sr1 = (instruction >> 6) & 0x7;
 
-//     let imm_flag = (instruction >> 5) & 0x1;
+    let imm_flag = (instruction >> 5) & 0x1;
 
-//     let mut value = 0;
-//     if imm_flag == 1 {
-//         let imm5 = sign_extend(instruction & 0x1F, 5);
-//         value = vm.read_register(r1).wrapping_add(imm5);
-//         // vm.write_register(r0, vm.read_register(r1) + imm5);
-//     } else {
-//         let r2 = Register::from(instruction & 0x7);
-//         value = vm.read_register(r1).wrapping_add(vm.read_register(r2))
-//         // vm.write_register(r0, vm.read_register(r1) + vm.read_register(r2));
-//     }
+    let value: u16 = if imm_flag == 1 {
+        let imm5 = sign_extend(instruction & 0x1F, 5);
+        vm.registers.get(sr1.into())?.wrapping_add(imm5)
+    } else {
+        let sr2 = instruction & 0x7;
+        vm.registers
+            .get(sr1.into())?
+            .wrapping_add(vm.registers.get(sr2.into())?)
+    };
 
-//     vm.write_register(r0, value);
+    vm.registers.set(dr.into(), value);
+    vm.update_flags(dr.into());
+    Ok(())
+}
 
-//     vm.update_flags(r0);
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::VM;
+
+    fn setup_vm() -> VM {
+        VM::new()
+    }
+
+    #[test]
+    fn test_add_register_mode() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Setup initial register values
+        vm.write_register(1, 5); // R1 = 5
+        vm.write_register(2, 3); // R2 = 3
+
+        // Create ADD instruction: ADD R0, R1, R2
+        // Format: 0001 000 001 000 010
+        // 0001 = ADD opcode
+        // 000 = destination register (R0)
+        // 001 = first source register (R1)
+        // 0 = register mode flag
+        // 010 = second source register (R2)
+        let instruction = 0b0001_000_001_0_00_010;
+
+        // Execute ADD instruction
+        add(&mut vm, instruction)?;
+
+        // Verify result
+        assert_eq!(vm.read_register(0)?, 8); // 5 + 3 = 8
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_immediate_mode() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Setup initial register value
+        vm.write_register(1, 5); // R1 = 5
+
+        // Create ADD instruction: ADD R0, R1, #3
+        // Format: 0001 000 001 1 00011
+        // 0001 = ADD opcode
+        // 000 = destination register (R0)
+        // 001 = first source register (R1)
+        // 1 = immediate mode flag
+        // 00011 = immediate value (3)
+        let instruction = 0b0001_000_001_1_00011;
+
+        // Execute ADD instruction
+        add(&mut vm, instruction)?;
+
+        // Verify result
+        assert_eq!(vm.read_register(0)?, 8); // 5 + 3 = 8
+        Ok(())
+    }
+}
