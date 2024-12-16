@@ -173,6 +173,22 @@ pub fn jump_subroutine(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn load(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    let value = vm.read_memory(address)?;
+
+    vm.registers.set(dr.into(), value);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -506,6 +522,34 @@ mod tests {
 
         // Verify PC was updated to target address
         assert_eq!(vm.registers.pc, target_address);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_load() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up test value in memory
+        let expected_value = 0x4242;
+        let pc_offset = 2;
+        let target_address = vm.registers.pc.wrapping_add(pc_offset);
+        vm.write_memory(target_address, expected_value);
+
+        // Create LD instruction: LD R0, #2
+        // Format: 0010 000 000000010
+        // 0010 = LD opcode
+        // 000 = destination register (R0)
+        // 000000010 = PC offset of 2
+        let instruction = 0b0010_000_000000010;
+
+        load(&mut vm, instruction)?;
+
+        // Verify value was loaded into R0
+        assert_eq!(vm.read_register(0)?, expected_value);
+
+        // Verify condition flags were updated
+        assert_eq!(vm.registers.condition, RegisterFlags::Pos);
 
         Ok(())
     }
