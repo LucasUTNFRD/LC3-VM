@@ -321,6 +321,21 @@ pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    let target_address = vm.read_memory(address)?;
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(target_address, value)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -808,6 +823,35 @@ mod tests {
 
         // Verify value was stored in memory at target address
         assert_eq!(vm.read_memory(target_address)?, value_to_store);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store_indirect() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up value in source register (R1)
+        let value_to_store = 0x4242;
+        vm.write_register(1, value_to_store);
+
+        // Set up pointer in memory
+        let pointer_offset = 2;
+        let pointer_addr = vm.registers.pc.wrapping_add(pointer_offset);
+        let final_addr = 0x3100;
+        vm.write_memory(pointer_addr, final_addr)?;
+
+        // Create STI instruction: STI R1, #2
+        // Format: 1011 001 000000010
+        // 1011 = STI opcode
+        // 001 = source register (R1)
+        // 000000010 = PC offset of 2
+        let instruction = 0b1011_001_000000010;
+
+        store_indirect(&mut vm, instruction)?;
+
+        // Verify value was stored in memory at final address
+        assert_eq!(vm.read_memory(final_addr)?, value_to_store);
 
         Ok(())
     }
