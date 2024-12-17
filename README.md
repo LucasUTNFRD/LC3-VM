@@ -27,10 +27,10 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
   - [x] LDI (Load Indirect)
   - [x] LDR (Load Register)
   - [x] LEA (Load Effective Address)
-  - [ ] NOT (Bitwise NOT)
-  - [ ] RTI (Return from Interrupt)
+  - [x] NOT (Bitwise NOT)
   - [x] ST (Store)
   - [x] STI (Store Indirect)
   - [x] STR (Store Register)
-  - [ ] TRAP (System Call)
+  - [x] TRAP (System Call)
 - [ ] Document ISA.
+- [ ] Read assembly programs from files.
