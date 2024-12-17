@@ -33,3 +33,4 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
   - [ ] STI (Store Indirect)
   - [ ] STR (Store Register)
   - [ ] TRAP (System Call)
+- [ ] Document ISA.

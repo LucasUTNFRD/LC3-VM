@@ -29,8 +29,8 @@ impl VM {
         self.memory.read(address)
     }
 
-    pub fn write_memory(&mut self, address: u16, value: u16) {
-        self.memory.write(address, value);
+    pub fn write_memory(&mut self, address: u16, value: u16) -> Result<(), VMError> {
+        self.memory.write(address, value)
     }
 
     pub fn read_register(&self, r: usize) -> Result<u16, VMError> {
@@ -59,6 +59,7 @@ impl VM {
             self.execute(opcode, instruction)?;
         }
     }
+
     fn execute(&mut self, opcode: Opcode, instruction: u16) -> Result<(), VMError> {
         match opcode {
             Opcode::Br => conditional_branch(self, instruction),

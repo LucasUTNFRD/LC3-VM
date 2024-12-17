@@ -47,7 +47,18 @@ impl From<u16> for Opcode {
     }
 }
 
-pub fn sign_extend(number: u16, bit_count: i32) -> u16 {
+/// Sign extends a number to 16 bits based on its most significant bit
+///
+/// Takes a number and the count of its significant bits, then extends
+/// the sign bit (MSB) across the remaining high bits of a 16-bit value
+///
+/// # Arguments
+/// * `number` - The number to sign extend
+/// * `bit_count` - The number of significant bits in the original number
+///
+/// # Returns
+/// The sign-extended 16-bit value
+fn sign_extend(number: u16, bit_count: i32) -> u16 {
     let mut result = number;
     if let Some(shift_amount) = bit_count.checked_sub(1) {
         if (number >> shift_amount & 1) == 1 {
@@ -57,11 +68,15 @@ pub fn sign_extend(number: u16, bit_count: i32) -> u16 {
     result
 }
 
-/// ADD takes two values and stores them in a register.
-/// - In register mode, the second value to add is found in a register.
-/// - In immediate mode, the second value is embedded in the right-most 5 bits of the instruction.
-/// - Values which are shorter than 16 bits need to be sign extended.
-/// - Any time an instruction modifies a register, the condition flags need to be updated.
+/// ADD - Add
+///
+/// Format: `ADD DR, SR1, SR2` or `ADD DR, SR1, imm5`
+///
+/// Adds two values and stores the result in a register:
+/// - If bit [5] is 0, adds the contents of SR1 and SR2
+/// - If bit [5] is 1, adds the contents of SR1 and sign-extended imm5
+///
+/// Updates condition codes based on the result
 pub fn add(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
 
@@ -84,6 +99,16 @@ pub fn add(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// LDI - Load Indirect
+///
+/// Format: `LDI DR, PCoffset9`
+///
+/// Loads a value from memory using indirect addressing:
+/// 1. Adds PCoffset9 to the incremented PC to get the address of a pointer
+/// 2. Loads the memory contents at this pointer address
+/// 3. Loads the value at the address from step 2 into DR
+///
+/// Updates condition codes based on the value loaded
 pub fn ldi(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
 
@@ -107,6 +132,15 @@ pub fn ldi(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// AND - Bitwise AND
+///
+/// Format: `AND DR, SR1, SR2` or `AND DR, SR1, imm5`
+///
+/// Performs bitwise AND operation:
+/// - If bit [5] is 0, ANDs the contents of SR1 and SR2
+/// - If bit [5] is 1, ANDs the contents of SR1 and sign-extended imm5
+///
+/// Updates condition codes based on the result
 pub fn and(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
 
@@ -129,6 +163,12 @@ pub fn and(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// BR - Conditional Branch
+///
+/// Format: `BRnzp PCoffset9`
+///
+/// Branches to PC + PCoffset9 if any condition code bit that is set in
+/// the instruction (n, z, or p) matches the current condition flags
 pub fn conditional_branch(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let n = ((instruction >> 11) & 0x1) != 0;
     let z = ((instruction >> 10) & 0x1) != 0;
@@ -148,12 +188,25 @@ pub fn conditional_branch(vm: &mut VM, instruction: u16) -> Result<(), VMError> 
     Ok(())
 }
 
+/// JMP - Jump
+///
+/// Format: `JMP BaseR`
+///
+/// Jumps to the address contained in the base register
+/// Also used for RET when BaseR is R7
 pub fn jmp(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let base_r = (instruction >> 6) & 0x7;
     vm.registers.pc = vm.registers.get(base_r.into())?;
     Ok(())
 }
 
+/// JSR/JSRR - Jump to Subroutine
+///
+/// Format: `JSR PCoffset11` or `JSRR BaseR`
+///
+/// Saves PC to R7 then:
+/// - If bit [11] is 1 (JSR): PC = PC + PCoffset11
+/// - If bit [11] is 0 (JSRR): PC = BaseR
 pub fn jump_subroutine(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let long_flag = (instruction >> 11) & 0x1;
 
@@ -173,6 +226,12 @@ pub fn jump_subroutine(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// LD - Load
+///
+/// Format: `LD DR, PCoffset9`
+///
+/// Loads a value from memory at address PC + PCoffset9 into DR
+/// Updates condition codes based on the value loaded
 pub fn load(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
 
@@ -189,6 +248,12 @@ pub fn load(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// LDR - Load Register
+///
+/// Format: `LDR DR, BaseR, offset6`
+///
+/// Loads a value from memory at address BaseR + offset6 into DR
+/// Updates condition codes based on the value loaded
 pub fn load_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
     let base_r = (instruction >> 6) & 0x7;
@@ -205,6 +270,12 @@ pub fn load_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// LEA - Load Effective Address
+///
+/// Format: `LEA DR, PCoffset9`
+///
+/// Loads the address PC + PCoffset9 into DR
+/// Updates condition codes based on the value loaded
 pub fn load_effective_address(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
     let pc_offset = sign_extend(instruction & 0x1FF, 9);
@@ -218,6 +289,12 @@ pub fn load_effective_address(vm: &mut VM, instruction: u16) -> Result<(), VMErr
     Ok(())
 }
 
+/// NOT - Bitwise NOT
+///
+/// Format: `NOT DR, SR`
+///
+/// Performs bitwise NOT operation on the contents of SR and stores in DR
+/// Updates condition codes based on the result
 pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
     let sr = (instruction >> 6) & 0x7;
