@@ -3,7 +3,7 @@ mod memory;
 mod opdcodes;
 mod registers;
 
-use errors::VMError;
+use errors::{TrapError, VMError};
 use memory::Memory;
 use opdcodes::*;
 use registers::Registers;
@@ -67,7 +67,15 @@ impl VM {
             let instruction = (instruction >> 12) & 0xF;
             let opcode: Opcode = Opcode::from(instruction);
 
-            self.execute(opcode, instruction)?;
+            match self.execute(opcode, instruction) {
+                // Continue running if Ok or if error is not Halt
+                Ok(_) => continue,
+                Err(VMError::TrapError(TrapError::Halt)) => {
+                    println!("Program terminated normally.");
+                    return Ok(());
+                }
+                Err(e) => return Err(e), // Propagate other errors
+            }
         }
     }
 
@@ -81,14 +89,14 @@ impl VM {
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
             Opcode::Str => store_register(self, instruction),
-            Opcode::Rti => todo!(),
+            Opcode::Rti => Ok(()), // RTI is not implemented
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
-            Opcode::Res => todo!(),
+            Opcode::Res => Ok(()), // Res is not implemented
             Opcode::Lea => load_effective_address(self, instruction),
-            Opcode::Trap => todo!(),
+            Opcode::Trap => trap(self, instruction),
         }
     }
 }

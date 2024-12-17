@@ -1,8 +1,8 @@
-use std::io::{Read, Stdin};
-use std::u8;
+use std::io::{stdout, Read, Stdin, Write};
+// use std::u8;
 
 // use crate::registers::Register;
-use crate::errors::VMError;
+use crate::errors::{TrapError, VMError};
 use crate::registers::RegisterFlags;
 use crate::VM;
 
@@ -50,6 +50,7 @@ impl From<u16> for Opcode {
     }
 }
 
+// TODO: improve error handling
 pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     vm.write_register(7, vm.registers.pc);
 
@@ -62,7 +63,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
             let mut buffer = [0; 1];
             std::io::stdin()
                 .read_exact(&mut buffer)
-                .map_err(|_| VMError::GetcFailed)?;
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
 
             if let Some(c) = buffer.first() {
                 vm.registers.set(0, (*c).into());
@@ -79,13 +80,86 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
             print!("{}", char::from(char_code));
 
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
             Ok(())
         }
-        0x22 => todo!(),
-        0x23 => todo!(),
-        0x24 => todo!(),
-        0x25 => todo!(),
-        _ => todo!(),
+        0x22 => {
+            // PUTS - Write a string of ASCII characters to the console display.
+
+            let mut address = vm.registers.get(0)?;
+
+            let mut value = vm.read_memory(address)?;
+
+            while value != 0 {
+                let char_code =
+                    u8::try_from(value & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+
+                print!("{}", char::from(char_code));
+
+                address = address.wrapping_add(1);
+                value = vm.read_memory(address)?;
+            }
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            Ok(())
+        }
+        0x23 => {
+            // IN - Input a character with echo
+            print!("Enter a character: ");
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            let mut buffer = [0; 1];
+            std::io::stdin()
+                .read_exact(&mut buffer)
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            if let Some(c) = buffer.first() {
+                println!("{}", char::from(*c));
+                vm.registers.set(0, (*c).into());
+                vm.update_flags(0);
+            }
+            Ok(())
+        }
+        0x24 => {
+            // PUTSP - Write a string of ASCII characters to the console display.
+            let mut address = vm.registers.get(0)?;
+
+            let mut value = vm.read_memory(address)?;
+
+            while value != 0 {
+                let char1 = u8::try_from(value & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+                print!("{}", char::from(char1));
+
+                let char2 = u8::try_from(value >> 8).map_err(|_| VMError::InvalidCharacter)?;
+                if char2 != 0 {
+                    print!("{}", char::from(char2));
+                }
+
+                address = address.wrapping_add(1);
+                value = vm.read_memory(address)?;
+            }
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            Ok(())
+        }
+        0x25 => {
+            // HALT - Halt execution
+            println!("HALT");
+            Err(VMError::TrapError(TrapError::Halt))
+        }
+        _ => std::process::exit(1),
     }
 }
 
