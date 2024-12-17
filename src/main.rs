@@ -7,7 +7,7 @@ use errors::VMError;
 use memory::Memory;
 use opdcodes::{
     add, and, conditional_branch, jmp, jump_subroutine, ldi, load, load_effective_address,
-    load_register, Opcode,
+    load_register, not, Opcode,
 };
 use registers::Registers;
 
@@ -70,7 +70,7 @@ impl VM {
             Opcode::Ldr => load_register(self, instruction),
             Opcode::Str => todo!(),
             Opcode::Rti => todo!(),
-            Opcode::Not => todo!(),
+            Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => todo!(),
             Opcode::Jmp => jmp(self, instruction),

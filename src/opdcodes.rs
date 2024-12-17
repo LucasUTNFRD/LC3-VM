@@ -218,6 +218,19 @@ pub fn load_effective_address(vm: &mut VM, instruction: u16) -> Result<(), VMErr
     Ok(())
 }
 
+pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let dr = (instruction >> 9) & 0x7;
+    let sr = (instruction >> 6) & 0x7;
+
+    let value = !vm.registers.get(sr.into())?;
+
+    vm.registers.set(dr.into(), value);
+
+    vm.update_flags(dr.into());
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -654,6 +667,30 @@ mod tests {
 
         // Verify the calculated address was stored in R0
         assert_eq!(vm.read_register(0)?, initial_pc.wrapping_add(offset));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_not() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up test value in R1
+        let initial_value = 0b1010;
+        vm.write_register(1, initial_value);
+
+        // Create NOT instruction: NOT R0, R1
+        // Format: 1001 000 001 111111
+        // 1001 = NOT opcode
+        // 000 = destination register (R0)
+        // 001 = source register (R1)
+        // 111111 = unused
+        let instruction = 0b1001_000_001_111111;
+
+        not(&mut vm, instruction)?;
+
+        // Verify the bitwise NOT was stored in R0
+        assert_eq!(vm.read_register(0)?, !initial_value);
 
         Ok(())
     }
