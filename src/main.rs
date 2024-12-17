@@ -80,7 +80,7 @@ impl VM {
             Opcode::Jsr => jump_subroutine(self, instruction),
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
-            Opcode::Str => todo!(),
+            Opcode::Str => store_register(self, instruction),
             Opcode::Rti => todo!(),
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),

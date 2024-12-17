@@ -1,3 +1,6 @@
+use std::io::{Read, Stdin};
+use std::u8;
+
 // use crate::registers::Register;
 use crate::errors::VMError;
 use crate::registers::RegisterFlags;
@@ -44,6 +47,45 @@ impl From<u16> for Opcode {
             15 => Opcode::Trap,
             _ => Opcode::Res, // Default to reserved opcode instead of panicking
         }
+    }
+}
+
+pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    vm.write_register(7, vm.registers.pc);
+
+    let trap_vector = instruction & 0xFF;
+
+    match trap_vector {
+        0x20 => {
+            // GETC - Read a single character from the keyboard, The character is not echoed onto the console.
+            // Its ASCII code is copied into register 0. The high 8 bits of R0 are cleared.
+            let mut buffer = [0; 1];
+            std::io::stdin()
+                .read_exact(&mut buffer)
+                .map_err(|_| VMError::GetcFailed)?;
+
+            if let Some(c) = buffer.first() {
+                vm.registers.set(0, (*c).into());
+                vm.update_flags(0);
+            }
+            Ok(())
+        }
+        0x21 => {
+            // OUT - Write a character in R0[7:0] to the console display
+
+            // The high 8 bits of R0 are ignored with the mask 0xFF.
+            let char_code =
+                u8::try_from(vm.registers.get(0)? & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+
+            print!("{}", char::from(char_code));
+
+            Ok(())
+        }
+        0x22 => todo!(),
+        0x23 => todo!(),
+        0x24 => todo!(),
+        0x25 => todo!(),
+        _ => todo!(),
     }
 }
 
