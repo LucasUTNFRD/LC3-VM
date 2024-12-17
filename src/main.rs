@@ -5,10 +5,7 @@ mod registers;
 
 use errors::VMError;
 use memory::Memory;
-use opdcodes::{
-    add, and, conditional_branch, jmp, jump_subroutine, ldi, load, load_effective_address,
-    load_register, not, store, Opcode,
-};
+use opdcodes::*;
 use registers::Registers;
 
 struct VM {
@@ -87,7 +84,7 @@ impl VM {
             Opcode::Rti => todo!(),
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
-            Opcode::Sti => todo!(),
+            Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
             Opcode::Res => todo!(),
             Opcode::Lea => load_effective_address(self, instruction),

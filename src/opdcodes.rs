@@ -336,6 +336,20 @@ pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn store_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let base_r = (instruction >> 6) & 0x7;
+    let offset = sign_extend(instruction & 0x3F, 6);
+
+    let address = vm.registers.get(base_r.into())?.wrapping_add(offset);
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(address, value)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -852,6 +866,35 @@ mod tests {
 
         // Verify value was stored in memory at final address
         assert_eq!(vm.read_memory(final_addr)?, value_to_store);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store_register() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up base register (R1) with base address
+        let base_address = 0x3000;
+        vm.write_register(1, base_address);
+
+        // Set up value in source register (R2)
+        let value_to_store = 0x4242;
+        vm.write_register(2, value_to_store);
+
+        // Create STR instruction: STR R2, R1, #2
+        // Format: 0111 010 001 000010
+        // 0111 = STR opcode
+        // 010 = source register (R2)
+        // 001 = base register (R1)
+        // 000010 = offset of 2
+        let instruction = 0b0111_010_001_000010;
+
+        store_register(&mut vm, instruction)?;
+
+        // Calculate target address and verify value was stored
+        let target_address = base_address.wrapping_add(2);
+        assert_eq!(vm.read_memory(target_address)?, value_to_store);
 
         Ok(())
     }

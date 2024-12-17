@@ -29,8 +29,8 @@ The implementation is based on the guide: [Building a Virtual Machine for the LC
   - [x] LEA (Load Effective Address)
   - [ ] NOT (Bitwise NOT)
   - [ ] RTI (Return from Interrupt)
-  - [ ] ST (Store)
-  - [ ] STI (Store Indirect)
-  - [ ] STR (Store Register)
+  - [x] ST (Store)
+  - [x] STI (Store Indirect)
+  - [x] STR (Store Register)
   - [ ] TRAP (System Call)
 - [ ] Document ISA.
