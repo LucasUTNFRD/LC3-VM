@@ -54,7 +54,12 @@ impl From<u16> for Opcode {
 pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     vm.write_register(7, vm.registers.pc);
 
+    // print the dbg of the instruction in binary and in hex
+    dbg!(format!("{:016b}", instruction));
+    dbg!(format!("{:04X}", instruction));
     let trap_vector = instruction & 0xFF;
+
+    dbg!("Trap vector: {:#04X}", trap_vector);
 
     match trap_vector {
         0x20 => {
@@ -160,7 +165,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
             vm.state = VMState::Halted;
             Ok(())
         }
-        _ => std::process::exit(1),
+        _ => std::process::exit(5),
     }
 }
 
