@@ -17,6 +17,7 @@ struct VM {
 }
 
 impl VM {
+    /// Creates a new VM instance with initialized memory and registers
     pub fn new() -> Self {
         Self {
             memory: Memory::new(),
@@ -24,23 +25,36 @@ impl VM {
         }
     }
 
-    // Implement read_memory method using memory.read wich returns a Result
+    /// Reads a 16-bit value from the specified memory address
+    ///
+    /// # Errors
+    /// Returns `VMError::InvalidMemoryAccess` if address is invalid
     pub fn read_memory(&self, address: u16) -> Result<u16, VMError> {
         self.memory.read(address)
     }
 
+    /// Writes a 16-bit value to the specified memory address
+    ///
+    /// # Errors
+    /// Returns `VMError::InvalidMemoryAccess` if address is invalid
     pub fn write_memory(&mut self, address: u16, value: u16) -> Result<(), VMError> {
         self.memory.write(address, value)
     }
 
+    /// Reads the value of the specified register
+    ///
+    /// # Errors
+    /// Returns `VMError::InvalidRegister` if register number is invalid
     pub fn read_register(&self, r: usize) -> Result<u16, VMError> {
         self.registers.get(r)
     }
 
+    /// Writes a 16-bit value to the specified register
     pub fn write_register(&mut self, r: usize, value: u16) {
         self.registers.set(r, value);
     }
 
+    /// Updates the condition flags based on the value in the specified register
     pub fn update_flags(&mut self, r: usize) {
         self.registers.update_flags(r);
     }
