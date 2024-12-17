@@ -308,6 +308,19 @@ pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(address, value)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -768,6 +781,33 @@ mod tests {
 
         // Verify the bitwise NOT was stored in R0
         assert_eq!(vm.read_register(0)?, !initial_value);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up value in source register (R1)
+        let value_to_store = 0x4242;
+        vm.write_register(1, value_to_store);
+
+        // Calculate target address (PC + offset)
+        let pc_offset = 2;
+        let target_address = vm.registers.pc.wrapping_add(pc_offset);
+
+        // Create ST instruction: ST R1, #2
+        // Format: 0011 001 000000010
+        // 0011 = ST opcode
+        // 001 = source register (R1)
+        // 000000010 = PC offset of 2
+        let instruction = 0b0011_001_000000010;
+
+        store(&mut vm, instruction)?;
+
+        // Verify value was stored in memory at target address
+        assert_eq!(vm.read_memory(target_address)?, value_to_store);
 
         Ok(())
     }
