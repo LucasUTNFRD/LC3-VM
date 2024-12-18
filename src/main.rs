@@ -11,6 +11,13 @@ use registers::Registers;
 struct VM {
     memory: Memory,
     registers: Registers,
+    state: VMState,
+}
+
+#[derive(Debug, PartialEq)]
+enum VMState {
+    Running,
+    Halted,
 }
 
 impl VM {
@@ -19,6 +26,7 @@ impl VM {
         Self {
             memory: Memory::new(),
             registers: Registers::new(),
+            state: VMState::Running,
         }
     }
 
@@ -57,7 +65,7 @@ impl VM {
     }
 
     pub fn run(&mut self) -> Result<(), VMError> {
-        loop {
+        while self.state == VMState::Running {
             // 1. Load one instruction from memory at the address of the PC
             let instruction = self.read_memory(self.registers.pc)?;
 
@@ -67,16 +75,9 @@ impl VM {
             let instruction = (instruction >> 12) & 0xF;
             let opcode: Opcode = Opcode::from(instruction);
 
-            match self.execute(opcode, instruction) {
-                // Continue running if Ok or if error is not Halt
-                Ok(_) => continue,
-                Err(VMError::TrapError(TrapError::Halt)) => {
-                    println!("Program terminated normally.");
-                    return Ok(());
-                }
-                Err(e) => return Err(e), // Propagate other errors
-            }
+            self.execute(opcode, instruction)?;
         }
+        Ok(())
     }
 
     fn execute(&mut self, opcode: Opcode, instruction: u16) -> Result<(), VMError> {

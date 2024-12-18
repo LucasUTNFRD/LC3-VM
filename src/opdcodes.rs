@@ -4,7 +4,7 @@ use std::io::{stdout, Read, Stdin, Write};
 // use crate::registers::Register;
 use crate::errors::{TrapError, VMError};
 use crate::registers::RegisterFlags;
-use crate::VM;
+use crate::{VMState, VM};
 
 #[repr(u16)]
 pub enum Opcode {
@@ -157,7 +157,8 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
         0x25 => {
             // HALT - Halt execution
             println!("HALT");
-            Err(VMError::TrapError(TrapError::Halt))
+            vm.state = VMState::Halted;
+            Ok(())
         }
         _ => std::process::exit(1),
     }
