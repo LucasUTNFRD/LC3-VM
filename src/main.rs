@@ -36,7 +36,7 @@ impl VM {
     ///
     /// # Errors
     /// Returns `VMError::InvalidMemoryAccess` if address is invalid
-    pub fn read_memory(&self, address: u16) -> Result<u16, VMError> {
+    pub fn read_memory(&mut self, address: u16) -> Result<u16, VMError> {
         self.memory.read(address)
     }
 

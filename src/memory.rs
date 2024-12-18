@@ -1,9 +1,21 @@
+use std::f32::consts::TAU;
+
 use crate::errors::VMError;
 
 const MEMORY_MAX: usize = 1 << 16;
 
 pub struct Memory {
     mem: [u16; MEMORY_MAX],
+}
+
+const MR_KBSR: usize = 0xFE00; // Keyboard status register
+const MR_KBDR: usize = 0xFE02; // Keyboard data register
+
+fn check_key() -> bool {
+    todo!()
+}
+fn getchar() -> u16 {
+    todo!()
 }
 
 impl Memory {
@@ -19,8 +31,18 @@ impl Memory {
     /// Returns:
     /// - Ok(value) if address is valid
     /// - Err(InvalidMemoryAccess) if address is out of bounds
-    pub fn read(&self, address: u16) -> Result<u16, VMError> {
+    pub fn read(&mut self, address: u16) -> Result<u16, VMError> {
         let addr: usize = address.into();
+
+        if addr == MR_KBSR {
+            if check_key() {
+                self.mem[MR_KBSR] = 1 << 15;
+                self.mem[MR_KBDR] = getchar();
+            } else {
+                self.mem[MR_KBSR] = 0;
+            }
+        }
+
         self.mem
             .get(addr)
             .copied()
