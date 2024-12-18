@@ -23,7 +23,7 @@ impl Registers {
     pub fn new() -> Self {
         Self {
             regs: [0; NUM_REGISTERS],
-            pc: PC_START,
+            pc: PC_START, // Program counter starts at 0x3000, lower addresses are reserved for OS
             condition: RegisterFlags::Zro,
         }
     }

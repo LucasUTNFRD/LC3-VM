@@ -3,17 +3,21 @@ mod memory;
 mod opdcodes;
 mod registers;
 
-use errors::VMError;
+use errors::{TrapError, VMError};
 use memory::Memory;
-use opdcodes::{
-    add, and, conditional_branch, jmp, jump_subroutine, ldi, load, load_effective_address,
-    load_register, not, Opcode,
-};
+use opdcodes::*;
 use registers::Registers;
 
 struct VM {
     memory: Memory,
     registers: Registers,
+    state: VMState,
+}
+
+#[derive(Debug, PartialEq)]
+enum VMState {
+    Running,
+    Halted,
 }
 
 impl VM {
@@ -22,6 +26,7 @@ impl VM {
         Self {
             memory: Memory::new(),
             registers: Registers::new(),
+            state: VMState::Running,
         }
     }
 
@@ -60,7 +65,7 @@ impl VM {
     }
 
     pub fn run(&mut self) -> Result<(), VMError> {
-        loop {
+        while self.state == VMState::Running {
             // 1. Load one instruction from memory at the address of the PC
             let instruction = self.read_memory(self.registers.pc)?;
 
@@ -72,6 +77,7 @@ impl VM {
 
             self.execute(opcode, instruction)?;
         }
+        Ok(())
     }
 
     fn execute(&mut self, opcode: Opcode, instruction: u16) -> Result<(), VMError> {
@@ -79,19 +85,19 @@ impl VM {
             Opcode::Br => conditional_branch(self, instruction),
             Opcode::Add => add(self, instruction),
             Opcode::Ld => load(self, instruction),
-            Opcode::St => todo!(),
+            Opcode::St => store(self, instruction),
             Opcode::Jsr => jump_subroutine(self, instruction),
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
-            Opcode::Str => todo!(),
-            Opcode::Rti => todo!(),
+            Opcode::Str => store_register(self, instruction),
+            Opcode::Rti => Ok(()), // RTI is not implemented
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
-            Opcode::Sti => todo!(),
+            Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
-            Opcode::Res => todo!(),
+            Opcode::Res => Ok(()), // Res is not implemented
             Opcode::Lea => load_effective_address(self, instruction),
-            Opcode::Trap => todo!(),
+            Opcode::Trap => trap(self, instruction),
         }
     }
 }

@@ -1,7 +1,10 @@
+use std::io::{stdout, Read, Stdin, Write};
+// use std::u8;
+
 // use crate::registers::Register;
-use crate::errors::VMError;
+use crate::errors::{TrapError, VMError};
 use crate::registers::RegisterFlags;
-use crate::VM;
+use crate::{VMState, VM};
 
 #[repr(u16)]
 pub enum Opcode {
@@ -44,6 +47,120 @@ impl From<u16> for Opcode {
             15 => Opcode::Trap,
             _ => Opcode::Res, // Default to reserved opcode instead of panicking
         }
+    }
+}
+
+// TODO: improve error handling
+pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    vm.write_register(7, vm.registers.pc);
+
+    let trap_vector = instruction & 0xFF;
+
+    match trap_vector {
+        0x20 => {
+            // GETC - Read a single character from the keyboard, The character is not echoed onto the console.
+            // Its ASCII code is copied into register 0. The high 8 bits of R0 are cleared.
+            let mut buffer = [0; 1];
+            std::io::stdin()
+                .read_exact(&mut buffer)
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            if let Some(c) = buffer.first() {
+                vm.registers.set(0, (*c).into());
+                vm.update_flags(0);
+            }
+            Ok(())
+        }
+        0x21 => {
+            // OUT - Write a character in R0[7:0] to the console display
+
+            // The high 8 bits of R0 are ignored with the mask 0xFF.
+            let char_code =
+                u8::try_from(vm.registers.get(0)? & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+
+            print!("{}", char::from(char_code));
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            Ok(())
+        }
+        0x22 => {
+            // PUTS - Write a string of ASCII characters to the console display.
+
+            let mut address = vm.registers.get(0)?;
+
+            let mut value = vm.read_memory(address)?;
+
+            while value != 0 {
+                let char_code =
+                    u8::try_from(value & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+
+                print!("{}", char::from(char_code));
+
+                address = address.wrapping_add(1);
+                value = vm.read_memory(address)?;
+            }
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            Ok(())
+        }
+        0x23 => {
+            // IN - Input a character with echo
+            print!("Enter a character: ");
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            let mut buffer = [0; 1];
+            std::io::stdin()
+                .read_exact(&mut buffer)
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            if let Some(c) = buffer.first() {
+                println!("{}", char::from(*c));
+                vm.registers.set(0, (*c).into());
+                vm.update_flags(0);
+            }
+            Ok(())
+        }
+        0x24 => {
+            // PUTSP - Write a string of ASCII characters to the console display.
+            let mut address = vm.registers.get(0)?;
+
+            let mut value = vm.read_memory(address)?;
+
+            while value != 0 {
+                let char1 = u8::try_from(value & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+                print!("{}", char::from(char1));
+
+                let char2 = u8::try_from(value >> 8).map_err(|_| VMError::InvalidCharacter)?;
+                if char2 != 0 {
+                    print!("{}", char::from(char2));
+                }
+
+                address = address.wrapping_add(1);
+                value = vm.read_memory(address)?;
+            }
+
+            std::io::stdout()
+                .flush()
+                .map_err(|err| VMError::TrapError(TrapError::IOError(err.to_string())))?;
+
+            Ok(())
+        }
+        0x25 => {
+            // HALT - Halt execution
+            println!("HALT");
+            vm.state = VMState::Halted;
+            Ok(())
+        }
+        _ => std::process::exit(1),
     }
 }
 
@@ -304,6 +421,48 @@ pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     vm.registers.set(dr.into(), value);
 
     vm.update_flags(dr.into());
+
+    Ok(())
+}
+
+pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(address, value)?;
+
+    Ok(())
+}
+
+pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let pc_offset = sign_extend(instruction & 0x1FF, 9);
+
+    let address = vm.registers.pc.wrapping_add(pc_offset);
+
+    let target_address = vm.read_memory(address)?;
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(target_address, value)?;
+
+    Ok(())
+}
+
+pub fn store_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
+    let sr = (instruction >> 9) & 0x7;
+    let base_r = (instruction >> 6) & 0x7;
+    let offset = sign_extend(instruction & 0x3F, 6);
+
+    let address = vm.registers.get(base_r.into())?.wrapping_add(offset);
+
+    let value = vm.registers.get(sr.into())?;
+
+    vm.write_memory(address, value)?;
 
     Ok(())
 }
@@ -768,6 +927,91 @@ mod tests {
 
         // Verify the bitwise NOT was stored in R0
         assert_eq!(vm.read_register(0)?, !initial_value);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up value in source register (R1)
+        let value_to_store = 0x4242;
+        vm.write_register(1, value_to_store);
+
+        // Calculate target address (PC + offset)
+        let pc_offset = 2;
+        let target_address = vm.registers.pc.wrapping_add(pc_offset);
+
+        // Create ST instruction: ST R1, #2
+        // Format: 0011 001 000000010
+        // 0011 = ST opcode
+        // 001 = source register (R1)
+        // 000000010 = PC offset of 2
+        let instruction = 0b0011_001_000000010;
+
+        store(&mut vm, instruction)?;
+
+        // Verify value was stored in memory at target address
+        assert_eq!(vm.read_memory(target_address)?, value_to_store);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store_indirect() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up value in source register (R1)
+        let value_to_store = 0x4242;
+        vm.write_register(1, value_to_store);
+
+        // Set up pointer in memory
+        let pointer_offset = 2;
+        let pointer_addr = vm.registers.pc.wrapping_add(pointer_offset);
+        let final_addr = 0x3100;
+        vm.write_memory(pointer_addr, final_addr)?;
+
+        // Create STI instruction: STI R1, #2
+        // Format: 1011 001 000000010
+        // 1011 = STI opcode
+        // 001 = source register (R1)
+        // 000000010 = PC offset of 2
+        let instruction = 0b1011_001_000000010;
+
+        store_indirect(&mut vm, instruction)?;
+
+        // Verify value was stored in memory at final address
+        assert_eq!(vm.read_memory(final_addr)?, value_to_store);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_store_register() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up base register (R1) with base address
+        let base_address = 0x3000;
+        vm.write_register(1, base_address);
+
+        // Set up value in source register (R2)
+        let value_to_store = 0x4242;
+        vm.write_register(2, value_to_store);
+
+        // Create STR instruction: STR R2, R1, #2
+        // Format: 0111 010 001 000010
+        // 0111 = STR opcode
+        // 010 = source register (R2)
+        // 001 = base register (R1)
+        // 000010 = offset of 2
+        let instruction = 0b0111_010_001_000010;
+
+        store_register(&mut vm, instruction)?;
+
+        // Calculate target address and verify value was stored
+        let target_address = base_address.wrapping_add(2);
+        assert_eq!(vm.read_memory(target_address)?, value_to_store);
 
         Ok(())
     }
