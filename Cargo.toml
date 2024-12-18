@@ -17,3 +17,4 @@ expect_used = "deny"
 arithmetic_side_effects = "deny"
 overflow_check_conditional = "warn"
 manual_saturating_arithmetic = "warn"
+
