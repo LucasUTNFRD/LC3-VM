@@ -1,5 +1,3 @@
-use std::f32::consts::TAU;
-
 use crate::errors::VMError;
 
 const MEMORY_MAX: usize = 1 << 16;

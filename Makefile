@@ -2,7 +2,7 @@ all:
 	cargo build
 
 run:
-	cargo run
+	cargo run -- $(ARGS)
 
 test:
 	cargo test -- --nocapture

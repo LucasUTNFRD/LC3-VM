@@ -9,6 +9,7 @@ use errors::VMError;
 use memory::Memory;
 use opdcodes::*;
 use registers::Registers;
+use termios::*;
 
 struct VM {
     memory: Memory,
@@ -142,6 +143,22 @@ impl VM {
 }
 
 fn main() {
+    // Configure termios
+    let mut termios = if let Ok(termios) = Termios::from_fd(0) {
+        termios
+    } else {
+        eprintln!("Failed to get termios settings");
+        std::process::exit(1);
+    };
+
+    //turn on canonical mode and echo mode
+    termios.c_lflag &= !(ICANON | ECHO);
+
+    if let Err(e) = tcsetattr(0, TCSAFLUSH, &termios) {
+        eprintln!("Failed to set termios settings: {:?}", e);
+        std::process::exit(1);
+    }
+
     // Read the program file given as the first command line argument
     // This will be used ./lc3-vm path/to/program.obj
     let args: Vec<String> = std::env::args().collect();
