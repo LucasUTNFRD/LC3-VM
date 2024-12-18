@@ -9,6 +9,7 @@ use errors::VMError;
 use memory::Memory;
 use opdcodes::*;
 use registers::Registers;
+use termios::*;
 
 struct VM {
     memory: Memory,
@@ -36,7 +37,7 @@ impl VM {
     ///
     /// # Errors
     /// Returns `VMError::InvalidMemoryAccess` if address is invalid
-    pub fn read_memory(&self, address: u16) -> Result<u16, VMError> {
+    pub fn read_memory(&mut self, address: u16) -> Result<u16, VMError> {
         self.memory.read(address)
     }
 
@@ -66,6 +67,20 @@ impl VM {
         self.registers.update_flags(r);
     }
 
+    /// Loads an LC-3 program file into memory
+    ///
+    /// # Arguments
+    /// * `file` - Path to the .obj file to load
+    ///
+    /// # Process
+    /// 1. Opens and reads the file into a buffer
+    /// 2. Extracts the origin address from the first two bytes
+    /// 3. Loads each subsequent 16-bit instruction into memory starting at origin
+    ///
+    /// # Errors
+    /// * `VMError::OpenFileFailed` - If file cannot be opened
+    /// * `VMError::LoadFailed` - If file format is invalid
+    /// * `VMError::InvalidMemoryAccess` - If program would load to invalid address
     pub fn load_program(&mut self, file: &str) -> Result<(), VMError> {
         let mut file = File::open(file).map_err(|_| VMError::OpenFileFailed(file.to_string()))?;
 
@@ -103,6 +118,17 @@ impl VM {
         Ok(())
     }
 
+    /// Runs the VM's main execution loop
+    ///
+    /// # Process
+    /// 1. Fetches instruction from memory at PC
+    /// 2. Increments PC
+    /// 3. Decodes instruction opcode
+    /// 4. Executes instruction
+    /// 5. Repeats until halted
+    ///
+    /// # Errors
+    /// Returns VMError if instruction execution fails
     pub fn run(&mut self) -> Result<(), VMError> {
         while self.state == VMState::Running {
             // 1. Load one instruction from memory at the address of the PC
@@ -129,12 +155,12 @@ impl VM {
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
             Opcode::Str => store_register(self, instruction),
-            Opcode::Rti => Ok(()), // RTI is not implemented
+            Opcode::Rti => Err(VMError::UnimplemedOpcode),
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
-            Opcode::Res => Ok(()), // Res is not implemented
+            Opcode::Res => Err(VMError::UnimplemedOpcode),
             Opcode::Lea => load_effective_address(self, instruction),
             Opcode::Trap => trap(self, instruction),
         }
@@ -142,12 +168,28 @@ impl VM {
 }
 
 fn main() {
+    // Configure termios
+    let mut termios = if let Ok(termios) = Termios::from_fd(0) {
+        termios
+    } else {
+        eprintln!("Failed to get termios settings");
+        std::process::exit(1);
+    };
+
+    //turn on canonical mode and echo mode
+    termios.c_lflag &= !(ICANON | ECHO);
+
+    if let Err(e) = tcsetattr(0, TCSAFLUSH, &termios) {
+        eprintln!("Failed to set termios settings: {:?}", e);
+        std::process::exit(1);
+    }
+
     // Read the program file given as the first command line argument
     // This will be used ./lc3-vm path/to/program.obj
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: {:?} [image-file1]", args.first());
+        eprintln!("Usage: ./lc3-vm path/to/program.obj");
         std::process::exit(1);
     }
 

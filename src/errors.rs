@@ -3,6 +3,7 @@ pub enum VMError {
     InvalidMemoryAccess(u16), // This includes the address that was attempted to be accessed
     InvalidRegister,
     // GetcFailed,
+    UnimplemedOpcode,
     InvalidCharacter,
     TrapError(TrapError),
     LoadFailed,
