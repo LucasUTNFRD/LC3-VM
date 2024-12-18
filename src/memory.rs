@@ -1,4 +1,5 @@
 use crate::errors::VMError;
+use std::io::Read;
 
 const MEMORY_MAX: usize = 1 << 16;
 
@@ -37,18 +38,29 @@ impl Memory {
         let addr: usize = address.into();
 
         if addr == MR_KBSR {
-            if check_key() {
-                self.mem[MR_KBSR] = 1 << 15;
-                self.mem[MR_KBDR] = getchar();
-            } else {
-                self.mem[MR_KBSR] = 0;
-            }
+            self.handle_keyboard()?;
         }
 
         self.mem
             .get(addr)
             .copied()
             .ok_or(VMError::InvalidMemoryAccess(address))
+    }
+
+    fn handle_keyboard(&mut self) -> Result<(), VMError> {
+        let mut buffer = [0; 1];
+        std::io::stdin()
+            .read_exact(&mut buffer)
+            .map_err(|_| VMError::InvalidCharacter)?;
+
+        if buffer[0] != 0 {
+            self.mem[MR_KBSR] = 1 << 15;
+            self.mem[MR_KBDR] = u16::from(*buffer.first().unwrap_or(&0));
+        } else {
+            self.mem[MR_KBSR] = 0;
+        }
+
+        Ok(())
     }
 
     /// Writes a 16-bit value to the given memory address

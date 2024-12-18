@@ -1,8 +1,7 @@
-all:
-	cargo build
+FILENAME   ?= ./examples/rogue.obj
 
 run:
-	cargo run -- $(ARGS)
+	cargo run $(FILENAME)
 
 test:
 	cargo test -- --nocapture
@@ -13,4 +12,5 @@ check:
 lint:
 	cargo clippy -- -D warnings
 
-.PHONY: all run test check lint
+.PHONY: run test check lint
+
