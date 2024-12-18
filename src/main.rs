@@ -67,6 +67,20 @@ impl VM {
         self.registers.update_flags(r);
     }
 
+    /// Loads an LC-3 program file into memory
+    ///
+    /// # Arguments
+    /// * `file` - Path to the .obj file to load
+    ///
+    /// # Process
+    /// 1. Opens and reads the file into a buffer
+    /// 2. Extracts the origin address from the first two bytes
+    /// 3. Loads each subsequent 16-bit instruction into memory starting at origin
+    ///
+    /// # Errors
+    /// * `VMError::OpenFileFailed` - If file cannot be opened
+    /// * `VMError::LoadFailed` - If file format is invalid
+    /// * `VMError::InvalidMemoryAccess` - If program would load to invalid address
     pub fn load_program(&mut self, file: &str) -> Result<(), VMError> {
         let mut file = File::open(file).map_err(|_| VMError::OpenFileFailed(file.to_string()))?;
 
@@ -104,6 +118,17 @@ impl VM {
         Ok(())
     }
 
+    /// Runs the VM's main execution loop
+    ///
+    /// # Process
+    /// 1. Fetches instruction from memory at PC
+    /// 2. Increments PC
+    /// 3. Decodes instruction opcode
+    /// 4. Executes instruction
+    /// 5. Repeats until halted
+    ///
+    /// # Errors
+    /// Returns VMError if instruction execution fails
     pub fn run(&mut self) -> Result<(), VMError> {
         while self.state == VMState::Running {
             // 1. Load one instruction from memory at the address of the PC
