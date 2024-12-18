@@ -144,7 +144,6 @@ impl VM {
 fn main() {
     // Read the program file given as the first command line argument
     // This will be used ./lc3-vm path/to/program.obj
-    // ensure that the argument is passed and the file is readable
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
@@ -184,8 +183,6 @@ fn main() {
 mod tests {
     use super::*;
     use registers::RegisterFlags;
-    // use std::io::Write;
-    // use tempfile::NamedTempFile;
 
     #[test]
     #[allow(clippy::unwrap_used)]

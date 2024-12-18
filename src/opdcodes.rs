@@ -50,16 +50,13 @@ impl From<u16> for Opcode {
     }
 }
 
-// TODO: improve error handling
 pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     vm.write_register(7, vm.registers.pc);
 
-    // print the dbg of the instruction in binary and in hex
-    dbg!(format!("{:016b}", instruction));
-    dbg!(format!("{:04X}", instruction));
+    // dbg!(format!("{:016b}", instruction));
     let trap_vector = instruction & 0xFF;
 
-    dbg!("Trap vector: {:#04X}", trap_vector);
+    // dbg!("Trap vector: {:#04X}", trap_vector);
 
     match trap_vector {
         0x20 => {
@@ -1042,6 +1039,51 @@ mod tests {
         // Calculate target address and verify value was stored
         let target_address = base_address.wrapping_add(2);
         assert_eq!(vm.read_memory(target_address)?, value_to_store);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_combined_instructions() -> Result<(), VMError> {
+        let mut vm = setup_vm();
+
+        // Set up initial value in memory
+        let initial_value = 0x4242;
+        let pc_offset = 2;
+        let target_address = vm.registers.pc.wrapping_add(pc_offset);
+        vm.write_memory(target_address, initial_value)?;
+
+        // Create LD instruction: LD R0, #2
+        // Format: 0010 000 000000010
+        // 0010 = LD opcode
+        // 000 = destination register (R0)
+        // 000000010 = PC offset of 2
+        let load_instruction = 0b0010_000_000000010;
+
+        load(&mut vm, load_instruction)?;
+
+        // Create ADD instruction: ADD R0, R0, #1
+        // Format: 0001 000 000 1 00001
+        // 0001 = ADD opcode
+        // 000 = destination register (R0)
+        // 000 = source register (R0)
+        // 1 = immediate mode flag
+        // 00001 = immediate value (1)
+        let add_instruction = 0b0001_000_000_1_00001;
+
+        add(&mut vm, add_instruction)?;
+
+        // Create ST instruction: ST R0, #2
+        // Format: 0011 000 000000010
+        // 0011 = ST opcode
+        // 000 = source register (R0)
+        // 000000010 = PC offset of 2
+        let store_instruction = 0b0011_000_000000010;
+
+        store(&mut vm, store_instruction)?;
+
+        // Verify the result was stored in memory
+        assert_eq!(vm.read_memory(target_address)?, initial_value + 1);
 
         Ok(())
     }
