@@ -130,12 +130,12 @@ impl VM {
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
             Opcode::Str => store_register(self, instruction),
-            Opcode::Rti => Ok(()), // RTI is not implemented
+            Opcode::Rti => Err(VMError::UnimplemedOpcode),
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
-            Opcode::Res => Ok(()), // Res is not implemented
+            Opcode::Res => Err(VMError::UnimplemedOpcode),
             Opcode::Lea => load_effective_address(self, instruction),
             Opcode::Trap => trap(self, instruction),
         }

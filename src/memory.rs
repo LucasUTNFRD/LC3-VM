@@ -7,8 +7,10 @@ pub struct Memory {
     mem: [u16; MEMORY_MAX],
 }
 
-const MR_KBSR: u16 = 0xFE00; // Keyboard status register
-const MR_KBDR: u16 = 0xFE02; // Keyboard data register
+/// Keyboard status register
+const MR_KBSR: u16 = 0xFE00;
+/// Keyboard data register
+const MR_KBDR: u16 = 0xFE02;
 
 impl Memory {
     /// Creates a new Memory instance with all memory locations initialized to 0
