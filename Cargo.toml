@@ -3,8 +3,6 @@ name = "LC3-VM"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-
 [lints.clippy]
 panic = "deny"
 unnecessary_cast = "warn"
