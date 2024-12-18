@@ -430,6 +430,14 @@ pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// ST - Store
+///
+/// Format: `ST SR, PCoffset9`
+///
+/// Stores a value from a register into memory at address PC + PCoffset9:
+/// 1. Sign-extends the 9-bit PC offset to 16 bits
+/// 2. Adds offset to the current PC to get target address
+/// 3. Stores contents of source register (SR) at target address
 pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let sr = (instruction >> 9) & 0x7;
     let pc_offset = sign_extend(instruction & 0x1FF, 9);
@@ -443,6 +451,14 @@ pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// STI - Store Indirect
+///
+/// Format: `STI SR, PCoffset9`
+///
+/// Stores a value from SR into memory using indirect addressing:
+/// 1. Adds PCoffset9 to the current PC to get address of pointer
+/// 2. Loads the memory contents at this pointer address
+/// 3. Stores contents of source register (SR) at the address from step 2
 pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let sr = (instruction >> 9) & 0x7;
     let pc_offset = sign_extend(instruction & 0x1FF, 9);
@@ -458,6 +474,14 @@ pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     Ok(())
 }
 
+/// STR - Store Register
+///
+/// Format: `STR SR, BaseR, offset6`
+///
+/// Stores a value from SR into memory at address BaseR + offset6:
+/// 1. Sign-extends 6-bit offset to 16 bits
+/// 2. Adds offset to contents of base register to get target address
+/// 3. Stores contents of source register (SR) at target address
 pub fn store_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let sr = (instruction >> 9) & 0x7;
     let base_r = (instruction >> 6) & 0x7;

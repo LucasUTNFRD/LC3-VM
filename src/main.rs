@@ -210,7 +210,7 @@ mod tests {
     #[allow(clippy::as_conversions)]
     fn test_load_and_run_simple_add() -> Result<(), VMError> {
         // Create VM and load program
-        let expected_values = vec![
+        let expected_values = [
             0x5020, // AND R0, R0, #0
             0x1025, // ADD R0, R0, #5
             0x5260, // AND R1, R1, #0
