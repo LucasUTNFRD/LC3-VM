@@ -162,12 +162,9 @@ fn main() {
     let mut vm = VM::new();
 
     // TODO: Load the program into memory
-    match vm.load_program(filename) {
-        Ok(_) => (),
-        Err(e) => {
-            eprintln!("Error loading program: {:?}", e);
-            std::process::exit(1);
-        }
+    if vm.load_program(filename).is_err() {
+        eprintln!("Error loading program: {:?}", filename);
+        std::process::exit(1);
     }
 
     match vm.run() {
