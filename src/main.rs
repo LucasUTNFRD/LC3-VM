@@ -189,7 +189,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: {:?} [image-file1]", args.first());
+        eprintln!("Usage: ./lc3-vm path/to/program.obj");
         std::process::exit(1);
     }
 
