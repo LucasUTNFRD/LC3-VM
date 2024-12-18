@@ -162,7 +162,9 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
             vm.state = VMState::Halted;
             Ok(())
         }
-        _ => std::process::exit(2),
+        _ => Err(VMError::TrapError(TrapError::InvalidTrapVector(
+            trap_vector,
+        ))),
     }
 }
 
