@@ -11,10 +11,7 @@ pub enum VMError {
 
 #[derive(Debug)]
 pub enum TrapError {
-    // InvalidVector(u16),
     IOError(String),
-    Halt,
-    // InvalidCharacterCode(u16),
 }
 
 // TODO: Implement the Display trait for VMError (not done bc rn im not using it)

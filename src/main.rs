@@ -5,7 +5,7 @@ mod registers;
 
 use std::{fs::File, io::Read};
 
-use errors::{TrapError, VMError};
+use errors::VMError;
 use memory::Memory;
 use opdcodes::*;
 use registers::Registers;
