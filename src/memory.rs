@@ -7,15 +7,8 @@ pub struct Memory {
     mem: [u16; MEMORY_MAX],
 }
 
-const MR_KBSR: usize = 0xFE00; // Keyboard status register
-const MR_KBDR: usize = 0xFE02; // Keyboard data register
-
-fn check_key() -> bool {
-    todo!()
-}
-fn getchar() -> u16 {
-    todo!()
-}
+const MR_KBSR: u16 = 0xFE00; // Keyboard status register
+const MR_KBDR: u16 = 0xFE02; // Keyboard data register
 
 impl Memory {
     /// Creates a new Memory instance with all memory locations initialized to 0
@@ -35,11 +28,11 @@ impl Memory {
     /// - Ok(value) if address is valid
     /// - Err(InvalidMemoryAccess) if address is out of bounds
     pub fn read(&mut self, address: u16) -> Result<u16, VMError> {
-        let addr: usize = address.into();
-
-        if addr == MR_KBSR {
+        if address == MR_KBSR {
             self.handle_keyboard()?;
         }
+
+        let addr: usize = address.into();
 
         self.mem
             .get(addr)
@@ -54,10 +47,12 @@ impl Memory {
             .map_err(|_| VMError::InvalidCharacter)?;
 
         if buffer[0] != 0 {
-            self.mem[MR_KBSR] = 1 << 15;
-            self.mem[MR_KBDR] = u16::from(*buffer.first().unwrap_or(&0));
+            self.write(MR_KBSR, 1 << 15)?;
+            // self.mem[MR_KBDR] = u16::from(*buffer.first().unwrap_or(&0));
+            let char = u16::from(buffer[0]);
+            self.write(MR_KBDR, char)?;
         } else {
-            self.mem[MR_KBSR] = 0;
+            self.write(MR_KBDR, 0)?;
         }
 
         Ok(())
