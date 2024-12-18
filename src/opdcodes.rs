@@ -1,4 +1,4 @@
-use std::io::{stdout, Read, Stdin, Write};
+use std::io::{Read, Write};
 // use std::u8;
 
 // use crate::registers::Register;
@@ -81,7 +81,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
             // The high 8 bits of R0 are ignored with the mask 0xFF.
             let char_code =
-                u8::try_from(vm.registers.get(0)? & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
+                u8::try_from(vm.read_register(0)? & 0xFF).map_err(|_| VMError::InvalidCharacter)?;
 
             print!("{}", char::from(char_code));
 
@@ -94,7 +94,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
         0x22 => {
             // PUTS - Write a string of ASCII characters to the console display.
 
-            let mut address = vm.registers.get(0)?;
+            let mut address = vm.read_register(0)?;
 
             let mut value = vm.read_memory(address)?;
 
@@ -136,7 +136,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
         }
         0x24 => {
             // PUTSP - Write a string of ASCII characters to the console display.
-            let mut address = vm.registers.get(0)?;
+            let mut address = vm.read_register(0)?;
 
             let mut value = vm.read_memory(address)?;
 
@@ -165,7 +165,7 @@ pub fn trap(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
             vm.state = VMState::Halted;
             Ok(())
         }
-        _ => std::process::exit(5),
+        _ => std::process::exit(2),
     }
 }
 
@@ -208,12 +208,12 @@ pub fn add(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
     let value: u16 = if imm_flag == 1 {
         let imm5 = sign_extend(instruction & 0x1F, 5);
-        vm.registers.get(sr1.into())?.wrapping_add(imm5)
+        vm.read_register(sr1.into())?.wrapping_add(imm5)
     } else {
         let sr2 = instruction & 0x7;
         vm.registers
             .get(sr1.into())?
-            .wrapping_add(vm.registers.get(sr2.into())?)
+            .wrapping_add(vm.read_register(sr2.into())?)
     };
 
     vm.registers.set(dr.into(), value);
@@ -272,10 +272,10 @@ pub fn and(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
     let value: u16 = if imm_flag == 1 {
         let imm5 = sign_extend(instruction & 0x1F, 5);
-        vm.registers.get(sr1.into())? & imm5
+        vm.read_register(sr1.into())? & imm5
     } else {
         let sr2 = instruction & 0x7;
-        vm.registers.get(sr1.into())? & vm.registers.get(sr2.into())?
+        vm.read_register(sr1.into())? & vm.read_register(sr2.into())?
     };
 
     vm.registers.set(dr.into(), value);
@@ -318,7 +318,7 @@ pub fn conditional_branch(vm: &mut VM, instruction: u16) -> Result<(), VMError> 
 /// Also used for RET when BaseR is R7
 pub fn jmp(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let base_r = (instruction >> 6) & 0x7;
-    vm.registers.pc = vm.registers.get(base_r.into())?;
+    vm.registers.pc = vm.read_register(base_r.into())?;
     Ok(())
 }
 
@@ -338,7 +338,7 @@ pub fn jump_subroutine(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     if long_flag == 0 {
         // JSRR
         let base_r = (instruction >> 6) & 0x7;
-        vm.registers.pc = vm.registers.get(base_r.into())?;
+        vm.registers.pc = vm.read_register(base_r.into())?;
     } else {
         // JSR
         let pc_offset = sign_extend(instruction & 0x7FF, 11);
@@ -381,7 +381,7 @@ pub fn load_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let base_r = (instruction >> 6) & 0x7;
     let offset = sign_extend(instruction & 0x3F, 6);
 
-    let address = vm.registers.get(base_r.into())?.wrapping_add(offset);
+    let address = vm.read_register(base_r.into())?.wrapping_add(offset);
 
     let value = vm.read_memory(address)?;
 
@@ -421,7 +421,7 @@ pub fn not(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let dr = (instruction >> 9) & 0x7;
     let sr = (instruction >> 6) & 0x7;
 
-    let value = !vm.registers.get(sr.into())?;
+    let value = !vm.read_register(sr.into())?;
 
     vm.registers.set(dr.into(), value);
 
@@ -436,7 +436,7 @@ pub fn store(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
     let address = vm.registers.pc.wrapping_add(pc_offset);
 
-    let value = vm.registers.get(sr.into())?;
+    let value = vm.read_register(sr.into())?;
 
     vm.write_memory(address, value)?;
 
@@ -451,7 +451,7 @@ pub fn store_indirect(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 
     let target_address = vm.read_memory(address)?;
 
-    let value = vm.registers.get(sr.into())?;
+    let value = vm.read_register(sr.into())?;
 
     vm.write_memory(target_address, value)?;
 
@@ -463,9 +463,9 @@ pub fn store_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
     let base_r = (instruction >> 6) & 0x7;
     let offset = sign_extend(instruction & 0x3F, 6);
 
-    let address = vm.registers.get(base_r.into())?.wrapping_add(offset);
+    let address = vm.read_register(base_r.into())?.wrapping_add(offset);
 
-    let value = vm.registers.get(sr.into())?;
+    let value = vm.read_register(sr.into())?;
 
     vm.write_memory(address, value)?;
 
@@ -473,6 +473,7 @@ pub fn store_register(vm: &mut VM, instruction: u16) -> Result<(), VMError> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unusual_byte_groupings)]
 mod tests {
     use super::*;
     use crate::VM;
@@ -541,10 +542,10 @@ mod tests {
         let expected_value = 0x4242;
 
         // Store the final address at the initial address
-        vm.write_memory(initial_address, final_address);
+        vm.write_memory(initial_address, final_address)?;
 
         // Store the actual value at the final address
-        vm.write_memory(final_address, expected_value);
+        vm.write_memory(final_address, expected_value)?;
 
         // Create LDI instruction: LDI R0, #2
         // Format: 1010 000 000000010
@@ -817,7 +818,7 @@ mod tests {
         let expected_value = 0x4242;
         let pc_offset = 2;
         let target_address = vm.registers.pc.wrapping_add(pc_offset);
-        vm.write_memory(target_address, expected_value);
+        vm.write_memory(target_address, expected_value)?;
 
         // Create LD instruction: LD R0, #2
         // Format: 0010 000 000000010
@@ -849,7 +850,7 @@ mod tests {
         let offset = 2;
         let expected_value = 0x4240;
         let target_address = base_address.wrapping_add(offset);
-        vm.write_memory(target_address, expected_value);
+        vm.write_memory(target_address, expected_value)?;
 
         // Create LDR instruction: LDR R0, R1, #2
         // Format: 0110 000 001 000010
@@ -874,17 +875,17 @@ mod tests {
         vm.write_register(1, base_address);
 
         // Test positive value
-        vm.write_memory(base_address, 1);
+        vm.write_memory(base_address, 1)?;
         load_register(&mut vm, 0b0110_000_001_000000)?;
         assert_eq!(vm.registers.condition, RegisterFlags::Pos);
 
         // Test zero value
-        vm.write_memory(base_address.wrapping_add(1), 0);
+        vm.write_memory(base_address.wrapping_add(1), 0)?;
         load_register(&mut vm, 0b0110_000_001_000001)?;
         assert_eq!(vm.registers.condition, RegisterFlags::Zro);
 
         // Test negative value
-        vm.write_memory(base_address.wrapping_add(2), 0x8000);
+        vm.write_memory(base_address.wrapping_add(2), 0x8000)?;
         load_register(&mut vm, 0b0110_000_001_000010)?;
         assert_eq!(vm.registers.condition, RegisterFlags::Neg);
 

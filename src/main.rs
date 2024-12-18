@@ -74,7 +74,12 @@ impl VM {
         file.read_to_end(&mut buffer)
             .map_err(|_| VMError::LoadFailed)?;
 
-        let origin = u16::from_be_bytes([buffer[0], buffer[1]]);
+        let origin = match (buffer.first(), buffer.get(1)) {
+            (Some(&first_byte), Some(&second_byte)) => {
+                u16::from_be_bytes([first_byte, second_byte])
+            }
+            _ => return Err(VMError::LoadFailed),
+        };
 
         let mut current_address = origin;
 
@@ -84,7 +89,12 @@ impl VM {
                 return Err(VMError::LoadFailed);
             }
 
-            let instruction = u16::from_be_bytes([chunk[0], chunk[1]]);
+            let instruction = match (chunk.first(), chunk.get(1)) {
+                (Some(&first_byte), Some(&second_byte)) => {
+                    u16::from_be_bytes([first_byte, second_byte])
+                }
+                _ => return Err(VMError::LoadFailed),
+            };
 
             self.write_memory(current_address, instruction)?;
             current_address = current_address.wrapping_add(1);
