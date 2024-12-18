@@ -28,6 +28,10 @@ impl Memory {
 
     /// Reads a 16-bit value from the given memory address
     ///
+    /// Special handling for memory-mapped registers:
+    /// - KBSR (0xFE00): Returns keyboard status (MSB set if key available)
+    /// - KBDR (0xFE02): Returns ASCII code of last key pressed
+    ///
     /// Returns:
     /// - Ok(value) if address is valid
     /// - Err(InvalidMemoryAccess) if address is out of bounds
