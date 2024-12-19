@@ -7,6 +7,7 @@ use crate::registers::RegisterFlags;
 use crate::{VMState, VM};
 
 #[repr(u16)]
+#[derive(Debug, PartialEq)]
 pub enum Opcode {
     Br = 0, /* branch */
     Add,    /* add  */

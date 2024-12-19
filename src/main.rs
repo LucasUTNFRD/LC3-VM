@@ -5,7 +5,7 @@ mod registers;
 
 use std::{fs::File, io::Read};
 
-use errors::VMError;
+use errors::{TrapError, VMError};
 use memory::Memory;
 use opdcodes::*;
 use registers::Registers;
@@ -155,12 +155,12 @@ impl VM {
             Opcode::And => and(self, instruction),
             Opcode::Ldr => load_register(self, instruction),
             Opcode::Str => store_register(self, instruction),
-            Opcode::Rti => Err(VMError::UnimplemedOpcode),
+            Opcode::Rti => Err(VMError::UnimplemedOpcode(Opcode::Rti)),
             Opcode::Not => not(self, instruction),
             Opcode::Ldi => ldi(self, instruction),
             Opcode::Sti => store_indirect(self, instruction),
             Opcode::Jmp => jmp(self, instruction),
-            Opcode::Res => Err(VMError::UnimplemedOpcode),
+            Opcode::Res => Err(VMError::UnimplemedOpcode(Opcode::Res)),
             Opcode::Lea => load_effective_address(self, instruction),
             Opcode::Trap => trap(self, instruction),
         }
@@ -212,8 +212,36 @@ fn main() {
     match vm.run() {
         Ok(_) => std::process::exit(0),
         Err(e) => {
-            eprintln!("VM error: {:?}", e);
-            std::process::exit(1);
+            match e {
+                VMError::InvalidMemoryAccess(addr) => {
+                    eprintln!("Invalid memory access at address: 0x{:04X}", addr);
+                    std::process::exit(1);
+                }
+                VMError::UnimplemedOpcode(opcode) => {
+                    eprintln!("Unimplemented opcode: {:?}", opcode);
+                    std::process::exit(1);
+                }
+                VMError::TrapError(trap_error) => match trap_error {
+                    TrapError::IOError(msg) => {
+                        eprintln!("IO error: {:?}", msg);
+                        std::process::exit(1);
+                    }
+                    TrapError::InvalidTrapVector(vector) => {
+                        eprintln!("Invalid trap vector: 0x{:04X}", vector);
+                        std::process::exit(1);
+                    }
+                },
+                VMError::OpenFileFailed(path) => {
+                    eprintln!("Failed to open file: {:?}", path);
+                    std::process::exit(1);
+                }
+
+                _ => {
+                    eprintln!("VM error: {:?}", e);
+                    std::process::exit(1);
+                }
+            }
+            // eprintln!("VM error: {:?}", e);
         }
     }
 }

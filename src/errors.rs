@@ -1,9 +1,10 @@
+use crate::Opcode;
+
 #[derive(Debug)]
 pub enum VMError {
     InvalidMemoryAccess(u16), // This includes the address that was attempted to be accessed
     InvalidRegister,
-    // GetcFailed,
-    UnimplemedOpcode,
+    UnimplemedOpcode(Opcode),
     InvalidCharacter,
     TrapError(TrapError),
     LoadFailed,
@@ -15,5 +16,3 @@ pub enum TrapError {
     IOError(String),
     InvalidTrapVector(u16),
 }
-
-// TODO: Implement the Display trait for VMError (not done bc rn im not using it)
